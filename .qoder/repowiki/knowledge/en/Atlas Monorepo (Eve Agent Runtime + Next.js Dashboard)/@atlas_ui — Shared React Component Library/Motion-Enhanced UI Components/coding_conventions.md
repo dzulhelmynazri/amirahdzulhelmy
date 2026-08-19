@@ -1,0 +1,6 @@
+- Every interactive component reads `useReducedMotion()` and conditionally disables or simplifies animations (e.g. skipping `whileTap`/`whileHover`, collapsing transitions to duration 0) so motion respects user preferences.
+- Spring-based transitions are never hand-rolled per component; instead components import named tokens from `@atlas/ui/lib/ease` (`SPRING_PRESS`, `SPRING_SWAP`, `SPRING_PANEL`, `SPRING_MOUSE`, `SPRING_GLIDE`) to keep physics consistent across the design system.
+- Styling uses the shared `cn(...)` utility to merge Tailwind class strings, with variant/size mappings expressed as plain `Record` objects rather than conditional branches.
+- Stateful or composite components expose their public API through a `Props` interface extending the underlying HTML/Motion props via `Omit<HTMLMotionProps<...>, 'children'>`, preserving accessibility attributes and ref forwarding.
+- Cross-component state is communicated via React Context (e.g. `MorphContext` for popover trigger/content, `SmoothScrollContext` for scroll values) paired with a small `useXxxContext` helper that throws a descriptive error when used outside the provider.
+- Portal-rendered overlays use `createPortal` to `document.body` and guard against hydration mismatch by deferring portal mount until after a first client-side effect (see `popover-morph.tsx`'s `portalReady` flag).

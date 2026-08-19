@@ -1,0 +1,4 @@
+- Each brand gets its own file named after the service (e.g., `slack.tsx`, `notion.tsx`) and exports a PascalCase named function component as the default symbol.
+- Every icon component accepts `props: SVGProps<SVGSVGElement>` and spreads `{...props}` onto the root `<svg>` element to allow callers to override attributes like width, height, color, etc.
+- Icons are pure presentational components with no internal state, hooks, or external dependencies beyond React types.
+- New icons are added by creating a new file and adding a corresponding `export * from` line in `index.ts`.

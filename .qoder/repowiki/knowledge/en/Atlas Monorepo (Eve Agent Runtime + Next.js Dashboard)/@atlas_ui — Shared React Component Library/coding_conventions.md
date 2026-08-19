@@ -1,0 +1,6 @@
+- Components are grouped by feature under `src/components/<feature>/` and exposed via barrel `index.tsx` files mapped in `package.json` exports.
+- Styling combines Base UI primitives with Tailwind utility classes and `clsx`/`tailwind-merge` for conditional class composition.
+- Shared utilities, hooks, and global styles live in `src/lib/` and `src/styles/` rather than inside individual components.
+- New shadcn-generated components follow the aliases defined in `components.json` (`@atlas/ui/components`, `@atlas/ui/lib/utils`, `@atlas/ui/hooks`).
+- TypeScript types for each component are co-located alongside the component file (e.g. `types.ts` next to `index.tsx`).
+- Motion-enabled components use shared spring/easing tokens from `src/lib/ease.ts` and the motion context instead of ad-hoc animation values.

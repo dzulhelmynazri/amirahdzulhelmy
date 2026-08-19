@@ -1,0 +1,11 @@
+schema_version: 1
+module_path: packages_auth
+title: Authentication Service (Better Auth)
+scope:
+  - packages/auth/
+source_files: []
+depends_on: []
+related_to:
+  - path: apps_runtime
+  - path: apps_web
+  - path: packages_api

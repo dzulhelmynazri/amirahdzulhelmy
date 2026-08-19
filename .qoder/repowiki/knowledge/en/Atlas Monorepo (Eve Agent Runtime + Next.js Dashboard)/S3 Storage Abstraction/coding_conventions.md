@@ -1,0 +1,3 @@
+- Configuration is read exclusively from `@atlas/env/server` rather than hard-coded literals, keeping secrets out of source.
+- The storage pipeline is built as a single `createFiles` call with a flat `plugins` array, where each plugin is invoked with its own options object.
+- Both a factory function (`createStorage`) and a module-level singleton export (`storage`) are provided so consumers can choose between shared or isolated instances.

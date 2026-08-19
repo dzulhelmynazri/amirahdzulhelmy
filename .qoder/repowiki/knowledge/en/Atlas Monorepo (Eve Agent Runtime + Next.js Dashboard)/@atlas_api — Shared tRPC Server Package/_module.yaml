@@ -1,0 +1,11 @@
+schema_version: 1
+module_path: packages_api
+title: "@atlas/api — Shared tRPC Server Package"
+scope:
+  - packages/api/
+source_files: []
+depends_on: []
+related_to:
+  - path: apps_web
+  - path: packages_auth
+  - path: packages_db

@@ -1,0 +1,1 @@
+`bun dev` boots all workspace apps via `turbo run dev`; `bun build` runs incremental builds across packages; `bun check-types` performs cross-package type checking; database operations are scoped to the DB package via `bun db:push|studio|generate|migrate -F @atlas/db`.

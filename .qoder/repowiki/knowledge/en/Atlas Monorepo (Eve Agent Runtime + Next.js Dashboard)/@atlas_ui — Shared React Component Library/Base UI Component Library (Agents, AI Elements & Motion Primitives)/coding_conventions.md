@@ -1,0 +1,6 @@
+- Each component file is a single exported React function component typed with `ComponentPropsWithRef` or explicit prop interfaces, and uses `cn(...)` from `@atlas/ui/lib/utils` to compose className strings.
+- Primitive wrappers declare visual variants via `cva` (class-variance-authority) and merge them with the incoming `className` before passing down to the underlying Base UI primitive.
+- Interactive components opt into client-side behavior with the `'use client'` directive at the top of the file.
+- Composable component groups expose multiple named exports (e.g. `Message`, `MessageGroup`, `MessageAvatar`, `MessageContent`) that share a local React `createContext` to propagate layout state like message side or role.
+- Data attributes (`data-slot="..."`, `data-from`, `data-icon`) are attached to root elements to enable sibling selectors in Tailwind (e.g. `in-data-[slot=...]`, `has-data-[icon=...]`).
+- Motion-enabled components read `useReducedMotion()` and conditionally disable spring transitions when reduced motion is preferred.

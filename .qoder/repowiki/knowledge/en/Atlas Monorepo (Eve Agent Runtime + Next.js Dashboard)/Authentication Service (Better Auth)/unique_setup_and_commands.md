@@ -1,0 +1,1 @@
+Requires runtime env vars `BETTER_AUTH_URL`, `BETTER_AUTH_SECRET`, `CORS_ORIGIN`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `TELEGRAM_BOT_TOKEN`, and `TELEGRAM_BOT_USERNAME`; the DB must use the shared `@atlas/db` schema under `schema/auth`.

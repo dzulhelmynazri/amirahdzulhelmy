@@ -1,0 +1,20 @@
+schema_version: 1
+module_path: ""
+title: Atlas Monorepo (Eve Agent Runtime + Next.js Dashboard)
+scope:
+  - README.md
+  - .gitignore
+  - package.json
+  - turbo.json
+  - oxfmt.config.ts
+  - oxlint.config.ts
+  - tsconfig.json
+  - bun.lock
+  - skills-lock.json
+  - .mcp.json
+  - .agents/
+  - .husky/
+  - AGENTS.md
+source_files: []
+depends_on: []
+related_to: []

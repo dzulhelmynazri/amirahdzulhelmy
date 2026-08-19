@@ -1,0 +1,4 @@
+- Each feature area lives in its own file under `src/routers/` and exports a named `*Router` constructed via the shared `router()` helper imported from `../index`.
+- Procedures are selected by access level: unauthenticated endpoints use `publicProcedure`, while authenticated ones use `protectedProcedure` which enforces a present session via middleware that throws a `TRPCError` with code `UNAUTHORIZED`.
+- Routers compose their handlers as `.query(...)` functions that receive a destructured `{ ctx }` argument and return plain data objects rather than throwing or wrapping responses.
+- The root `src/index.ts` centralizes tRPC initialization and procedure factories; routers import exclusively from `../index` instead of importing `@trpc/server` directly.

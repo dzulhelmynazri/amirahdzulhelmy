@@ -1,0 +1,4 @@
+- Tables are defined as Drizzle `pgTable` declarations with explicit snake_case column names, `timestamp` columns defaulting to `now()`, and an `updated_at` field using `$onUpdate(() => new Date())`.
+- Foreign keys reference `user.id` with `onDelete: 'cascade'` (or `'set null'` for bookings) and are accompanied by named btree indexes on the foreign key column (e.g. `account_userId_idx`, `session_userId_idx`, `booking_userId_idx`).
+- Each schema module exports both table definitions and corresponding `relations()` definitions side-by-side, then re-exports everything through a single barrel index under `src/schema/`.
+- The package exposes both a singleton `db` instance created at module load time and a `createDb()` factory, allowing consumers to reuse the shared connection or construct per-request connections.

@@ -1,0 +1,2 @@
+- Configuration values are read from `@atlas/env/server` rather than imported directly from `process.env`, keeping environment access centralized.
+- The auth instance is exposed both as a factory function (`createAuth`) and a pre-instantiated singleton (`auth`) to support both test isolation and application bootstrap.

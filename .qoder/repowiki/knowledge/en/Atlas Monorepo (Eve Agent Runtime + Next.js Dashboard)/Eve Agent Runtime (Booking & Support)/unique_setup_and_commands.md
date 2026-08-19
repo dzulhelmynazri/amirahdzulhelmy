@@ -1,0 +1,1 @@
+Run via `npm run dev` / `build` / `start` which invoke `eve dev/build/start`; requires env vars `TELEGRAM_BOT_TOKEN`, `TWILIO_PHONE_NUMBER`, `EVE_MODEL` (defaults to `zai/glm-5.2`), optionally `EVE_TASK_MODEL` for background tasks, and a backend exposing `@atlas/auth` at `https://runtime.hackhaton.space` for OIDC/Better Auth sessions.

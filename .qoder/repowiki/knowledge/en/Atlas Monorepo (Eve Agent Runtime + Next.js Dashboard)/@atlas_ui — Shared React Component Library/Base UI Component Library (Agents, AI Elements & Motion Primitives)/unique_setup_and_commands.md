@@ -1,0 +1,1 @@
+Components rely on the project's Tailwind theme tokens (e.g. `--ring`, `--primary`, `--background`) and the shared `cn` utility from `@atlas/ui/lib/utils`; no per-component build scripts — the package is consumed as-is through the monorepo's path aliases.

@@ -1,0 +1,11 @@
+schema_version: 1
+module_path: apps_runtime
+title: Eve Agent Runtime (Booking & Support)
+scope:
+  - apps/runtime/
+source_files: []
+depends_on: []
+related_to:
+  - path: apps_web
+  - path: packages_atlas
+  - path: packages_auth

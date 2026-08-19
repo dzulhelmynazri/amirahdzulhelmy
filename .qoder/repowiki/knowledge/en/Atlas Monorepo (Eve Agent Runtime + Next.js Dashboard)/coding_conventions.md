@@ -1,0 +1,4 @@
+- All packages extend the shared base TypeScript configuration from `@atlas/config/tsconfig.base.json` rather than defining their own tsconfig.
+- Linting and formatting rules are centralized through the `ultracite` preset imported from `oxlint.config.ts` and `oxfmt.config.ts` at the repo root.
+- Workspace-wide dependency versions are pinned in the root `package.json` `workspaces.catalog` so every child inherits consistent versions.
+- Runtime secrets are declared once in `turbo.json` `globalEnv` and consumed by child apps/packages instead of being re-declared per package.

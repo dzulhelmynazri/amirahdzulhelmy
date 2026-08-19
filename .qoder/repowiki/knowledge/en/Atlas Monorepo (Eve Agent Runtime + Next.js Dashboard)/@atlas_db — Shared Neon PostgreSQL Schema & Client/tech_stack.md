@@ -1,0 +1,1 @@
+Drizzle ORM v0.45 with drizzle-kit v0.31 against Neon's serverless PostgreSQL driver (`@neondatabase/serverless`); schema uses pg-core column types; Zod is listed as a runtime dependency for validation.

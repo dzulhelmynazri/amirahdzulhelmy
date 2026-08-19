@@ -1,0 +1,1 @@
+Development server runs on port 3001 via `npm run dev` (see `package.json` scripts). Requires `RUNTIME_URL` env var (read through `@atlas/env/server`) so the `/api/eve/*` rewrite can forward requests to the external Eve runtime.

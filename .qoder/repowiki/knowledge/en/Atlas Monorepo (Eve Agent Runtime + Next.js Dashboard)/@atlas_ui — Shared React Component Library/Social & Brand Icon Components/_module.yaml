@@ -1,0 +1,8 @@
+schema_version: 1
+module_path: packages_ui/socials
+title: Social & Brand Icon Components
+scope:
+  - packages/ui/src/components/socials/
+source_files: []
+depends_on: []
+related_to: []

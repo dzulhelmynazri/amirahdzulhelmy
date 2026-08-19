@@ -1,0 +1,1 @@
+React Server Components marked with `"use client"`; `motion/react` for animations and `AnimatePresence`; `lenis` (via `lenis/react`) for smooth scrolling with a native-scroll fallback under reduced motion; Tailwind CSS classes merged through `clsx` + `tailwind-merge` via the `cn` utility; `lucide-react` icons for stateful button states.

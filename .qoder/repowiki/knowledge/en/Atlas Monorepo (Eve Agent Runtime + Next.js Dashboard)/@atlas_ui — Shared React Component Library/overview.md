@@ -1,0 +1,1 @@
+A private monorepo package that bundles accessible primitives, agent chat UI, AI workflow elements, motion-enhanced widgets, and social icons into a single @atlas/ui component library consumed by other workspace packages.

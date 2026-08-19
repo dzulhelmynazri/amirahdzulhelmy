@@ -1,0 +1,26 @@
+{
+  "name": "@atlas/storage",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "default": "./src/index.ts"
+    },
+    "./*": {
+      "default": "./src/*.ts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@atlas/env": "workspace:*",
+    "@aws-sdk/client-s3": "^3.848.0",
+    "@aws-sdk/s3-presigned-post": "^3.848.0",
+    "@aws-sdk/s3-request-presigner": "^3.848.0",
+    "files-sdk": "^2.2.5"
+  },
+  "devDependencies": {
+    "@atlas/config": "workspace:*",
+    "typescript": "catalog:"
+  }
+}

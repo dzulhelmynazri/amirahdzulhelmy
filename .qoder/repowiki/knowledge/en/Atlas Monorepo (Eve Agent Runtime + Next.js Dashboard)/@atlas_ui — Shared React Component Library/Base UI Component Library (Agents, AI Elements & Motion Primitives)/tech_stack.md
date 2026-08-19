@@ -1,0 +1,1 @@
+React + TypeScript components built on `@base-ui/react` for accessibility primitives, styled with Tailwind CSS and `class-variance-authority` for variant systems; animations via `motion/react` (Framer Motion); icons from `lucide-react`; scroll handling via `use-stick-to-bottom`.

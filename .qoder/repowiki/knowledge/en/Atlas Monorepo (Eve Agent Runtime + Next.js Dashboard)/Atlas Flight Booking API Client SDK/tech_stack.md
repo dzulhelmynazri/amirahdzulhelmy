@@ -1,0 +1,1 @@
+TypeScript SDK targeting Node/server runtime using native `fetch` for HTTP; Zod declared as a dependency (for potential request/response validation); configuration sourced from the workspace `@atlas/env/server` package.

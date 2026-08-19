@@ -1,0 +1,11 @@
+schema_version: 1
+module_path: apps_web
+title: Atlas Web Frontend (Next.js App)
+scope:
+  - apps/web/
+source_files: []
+depends_on: []
+related_to:
+  - path: apps_runtime
+  - path: packages_api
+  - path: packages_auth

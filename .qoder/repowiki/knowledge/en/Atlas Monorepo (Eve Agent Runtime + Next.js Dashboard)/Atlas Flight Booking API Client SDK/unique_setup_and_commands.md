@@ -1,0 +1,1 @@
+Requires three environment variables at runtime — `ATLAS_API_URL`, `ATLAS_CLIENT_ID`, `ATLAS_CLIENT_SECRET` — injected via `@atlas/env/server`; consumed as source in this monorepo because `package.json` `main` and `exports` point directly at `src/*.ts`.
