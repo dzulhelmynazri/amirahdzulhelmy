@@ -16,7 +16,7 @@ When the obvious path breaks — a canceled direct flight, a missed connection, 
 2. If the direct route may be unavailable, use `route-export` and consider alternate airports or connecting cities.
 3. Run one or more searches (`flight-search`, `smart-search`, `price-compare-search`) for each viable path.
 4. Present a short ranked shortlist: route, date, price, duration, stops, and airline. Lead with the user's stated priority.
-5. When the user picks an option, call **booking-agent** (new booking) or **rebook-agent** (replacing a disrupted ticket) with the selected `routingIdentifier` and the traveler details you already have.
+5. When the user picks an option, call **booking-agent** (new booking) or **rebook-agent** (replacing a disrupted ticket) with the selected `routingIdentifier` and the traveler details you already have. `price-compare-search` results are comparison-only fares — if the pick came from one, run `flight-search` for that exact date first and hand over only the bookable offer it returns.
 
 # Delegation
 
