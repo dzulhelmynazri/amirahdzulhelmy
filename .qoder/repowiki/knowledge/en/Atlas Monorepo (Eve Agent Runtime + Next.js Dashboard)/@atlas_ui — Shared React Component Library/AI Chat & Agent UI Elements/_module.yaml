@@ -1,0 +1,8 @@
+schema_version: 1
+module_path: packages_ui/ai_elements
+title: AI Chat & Agent UI Elements
+scope:
+  - packages/ui/src/components/ai-elements/
+source_files: []
+depends_on: []
+related_to: []

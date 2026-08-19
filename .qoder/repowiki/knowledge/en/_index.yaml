@@ -1,0 +1,184 @@
+# 知识卡导出索引文件
+schema_version: 1
+locale: en-US
+branch: main
+nodes_managed: true
+exported_at: "2026-08-15T09:16:02Z"
+modules:
+  "":
+    dir_name: Atlas Monorepo (Eve Agent Runtime + Next.js Dashboard)
+    title: Atlas Monorepo (Eve Agent Runtime + Next.js Dashboard)
+    scope:
+      - README.md
+      - .gitignore
+      - package.json
+      - turbo.json
+      - oxfmt.config.ts
+      - oxlint.config.ts
+      - tsconfig.json
+      - bun.lock
+      - skills-lock.json
+      - .mcp.json
+      - .agents/
+      - .husky/
+      - AGENTS.md
+    source_files: []
+    children:
+      - apps_runtime
+      - apps_web
+      - packages_api
+      - packages_atlas
+      - packages_auth
+      - packages_config
+      - packages_db
+      - packages_storage
+      - packages_ui
+    depends_on: []
+    related_to: []
+  apps_runtime:
+    dir_name: Eve Agent Runtime (Booking & Support)
+    title: Eve Agent Runtime (Booking & Support)
+    scope:
+      - apps/runtime/
+    source_files: []
+    children: []
+    depends_on: []
+    related_to:
+      - path: apps_web
+      - path: packages_atlas
+      - path: packages_auth
+  apps_web:
+    dir_name: Atlas Web Frontend (Next.js App)
+    title: Atlas Web Frontend (Next.js App)
+    scope:
+      - apps/web/
+    source_files: []
+    children: []
+    depends_on: []
+    related_to:
+      - path: apps_runtime
+      - path: packages_api
+      - path: packages_auth
+  packages_api:
+    dir_name: "@atlas_api — Shared tRPC Server Package"
+    title: "@atlas/api — Shared tRPC Server Package"
+    scope:
+      - packages/api/
+    source_files: []
+    children: []
+    depends_on: []
+    related_to:
+      - path: apps_web
+      - path: packages_auth
+      - path: packages_db
+  packages_atlas:
+    dir_name: Atlas Flight Booking API Client SDK
+    title: Atlas Flight Booking API Client SDK
+    scope:
+      - packages/atlas/
+    source_files: []
+    children: []
+    depends_on: []
+    related_to:
+      - path: apps_runtime
+  packages_auth:
+    dir_name: Authentication Service (Better Auth)
+    title: Authentication Service (Better Auth)
+    scope:
+      - packages/auth/
+    source_files: []
+    children: []
+    depends_on: []
+    related_to:
+      - path: apps_runtime
+      - path: apps_web
+      - path: packages_api
+  packages_config:
+    dir_name: Shared TypeScript Config & Typed Environment Schema
+    title: Shared TypeScript Config & Typed Environment Schema
+    scope:
+      - packages/config/
+      - packages/env/
+    source_files: []
+    children: []
+    depends_on: []
+    related_to: []
+  packages_db:
+    dir_name: "@atlas_db — Shared Neon PostgreSQL Schema & Client"
+    title: "@atlas/db — Shared Neon PostgreSQL Schema & Client"
+    scope:
+      - packages/db/
+    source_files: []
+    children: []
+    depends_on: []
+    related_to:
+      - path: packages_api
+  packages_storage:
+    dir_name: S3 Storage Abstraction
+    title: S3 Storage Abstraction
+    scope:
+      - packages/storage/
+    source_files: []
+    children: []
+    depends_on: []
+    related_to: []
+  packages_ui:
+    dir_name: "@atlas_ui — Shared React Component Library"
+    title: "@atlas/ui — Shared React Component Library"
+    scope:
+      - packages/ui/
+    source_files: []
+    children:
+      - packages_ui/agents
+      - packages_ui/ai_elements
+      - packages_ui/base_components
+      - packages_ui/motion
+      - packages_ui/socials
+    depends_on: []
+    related_to: []
+  packages_ui/agents:
+    dir_name: Agent Chat UI Components
+    title: Agent Chat UI Components
+    scope:
+      - packages/ui/src/components/agents/
+    source_files: []
+    children: []
+    depends_on: []
+    related_to: []
+  packages_ui/ai_elements:
+    dir_name: AI Chat & Agent UI Elements
+    title: AI Chat & Agent UI Elements
+    scope:
+      - packages/ui/src/components/ai-elements/
+    source_files: []
+    children: []
+    depends_on: []
+    related_to: []
+  packages_ui/base_components:
+    dir_name: Base UI Component Library (Agents, AI Elements & Motion Primitives)
+    title: Base UI Component Library (Agents, AI Elements & Motion Primitives)
+    scope:
+      - packages/ui/src/components/
+    source_files: []
+    children: []
+    depends_on: []
+    related_to: []
+  packages_ui/motion:
+    dir_name: Motion-Enhanced UI Components
+    title: Motion-Enhanced UI Components
+    scope:
+      - packages/ui/src/components/motion/
+      - packages/ui/src/lib/
+    source_files: []
+    children: []
+    depends_on: []
+    related_to: []
+  packages_ui/socials:
+    dir_name: Social & Brand Icon Components
+    title: Social & Brand Icon Components
+    scope:
+      - packages/ui/src/components/socials/
+    source_files: []
+    children: []
+    depends_on: []
+    related_to: []

@@ -1,0 +1,1 @@
+React functional components using TypeScript (`SVGProps<SVGSVGElement>`) and inline SVG markup; icons appear to be exported directly from official brand asset sources (e.g., Google's multi-gradient logo).

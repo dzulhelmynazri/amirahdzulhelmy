@@ -1,0 +1,1 @@
+Schema and migrations are managed via npm scripts: `npm run db:push` (schema → live DB), `npm run db:generate` (schema → SQL migration files), `npm run db:migrate` (apply pending migrations), and `npm run db:studio` (open Drizzle Studio). `drizzle.config.ts` loads `DATABASE_URL` from `../../apps/web/.env`, so CLI commands require that env file to be present.

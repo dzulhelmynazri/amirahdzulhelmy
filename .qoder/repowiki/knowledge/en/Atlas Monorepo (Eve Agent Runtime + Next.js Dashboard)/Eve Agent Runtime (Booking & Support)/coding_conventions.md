@@ -1,0 +1,6 @@
+- Each messaging channel is implemented as a single-file default export that calls the corresponding `eve/channels/*` factory with credentials sourced from `process.env`.
+- Authentication is expressed as an `AuthFn<Request>` function that reads request headers, resolves a Better Auth session, and maps it to Eve's `{ attributes, authenticator, issuer, principalId, principalType }` shape.
+- User-scoped external integrations are created lazily inside tool factories by reading `ctx.session.auth.current.principalId` and constructing a new `Composio` session per user via `getSession(userId)`.
+- Subagents are organized as directories containing an `agent.ts` entry, an `instructions.md` prompt, and a `tools/` folder of domain-specific tool implementations.
+- Tools derive the current user from the Eve request context rather than accepting it as a parameter, typically via `defineComposioTools` or direct factory functions.
+- Model selection is dynamic: interactive sessions use `primaryModel` while schedule/subagent events resolve to the cheaper `EVE_TASK_MODEL`.

@@ -1,0 +1,1 @@
+React Client Components built on `motion/react` (framer-motion) for spring-based animations, `lucide-react` icons, and Tailwind CSS utility classes via a `cn` helper; uses `@atlas/ui/lib/*` shared utilities for easing curves, class merging, and favicon resolution.

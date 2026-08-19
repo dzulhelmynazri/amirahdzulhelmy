@@ -1,0 +1,5 @@
+- Route groups are used to separate concerns: `(protected)` layout enforces authentication before rendering child pages, while `(public)` exposes unauthenticated routes like `/auth`.
+- Server components perform auth checks by calling `auth.api.getSession({ headers: await headers() })` and using `redirect('/auth')` when no user is present.
+- tRPC usage follows a single-source-of-truth pattern: the server exports `appRouter` from `@atlas/api/routers/index`, the client re-imports its type to generate a fully-typed proxy via `createTRPCOptionsProxy<AppRouter>`.
+- Client providers are composed in a top-level `Providers` component that wraps the entire app tree with theme, query, and toast contexts rather than scattering them per-page.
+- Environment variables are accessed exclusively through `@atlas/env/server` inside Next config and server code, never via `process.env` directly.

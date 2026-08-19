@@ -1,0 +1,1 @@
+Next.js App Router with Turbopack + React Compiler enabled; tRPC v11 over HTTP batch links with TanStack Query; Better-Auth with Telegram plugin for authentication; Tailwind CSS via `@atlas/ui` component library; Lucide icons; Sonner for toast notifications.

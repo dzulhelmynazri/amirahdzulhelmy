@@ -1,0 +1,1 @@
+TypeScript with strict compiler options; environment validation via `@t3-oss/env-core` / `@t3-oss/env-nextjs` backed by `zod` schemas; Node env loading via `dotenv`; ESM-only (`"type": "module"`) package exports.

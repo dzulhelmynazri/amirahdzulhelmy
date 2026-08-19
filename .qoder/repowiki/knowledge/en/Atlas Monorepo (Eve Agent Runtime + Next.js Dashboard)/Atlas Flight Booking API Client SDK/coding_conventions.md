@@ -1,0 +1,5 @@
+- Each API endpoint lives in its own file under a feature subdirectory and exposes a `createXxx(client)` factory function that returns an object with typed methods delegating to `client.post<T>(path, body)`.
+- Request and response payloads are modeled as local TypeScript `interface`s defined alongside their handler rather than shared DTOs.
+- Feature directories expose a barrel `index.ts` that re-exports every `createXxx` factory, which the root `src/index.ts` then imports and wires into the top-level client namespace.
+- Authentication credentials are passed once into `AtlasClient` and attached as `x-atlas-client-id` / `x-atlas-client-secret` headers on every request via a private `headers()` helper.
+- All endpoints use HTTP POST to `.do`-suffixed paths (e.g. `/search.do`, `/event/getPageList.do`, `/updateWebhookURL.do`) with JSON bodies.

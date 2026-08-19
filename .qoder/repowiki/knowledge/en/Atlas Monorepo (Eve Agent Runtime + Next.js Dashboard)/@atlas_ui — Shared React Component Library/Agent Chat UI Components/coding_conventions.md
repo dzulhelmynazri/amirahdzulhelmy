@@ -1,0 +1,6 @@
+- Each component file starts with `'use client'` and a comment header referencing its public URL path (e.g. `// beui.dev/components/agents/message`).
+- Components accept both controlled (`open`, `status`, `feedback`) and uncontrolled (`defaultOpen`, `defaultFeedback`) props, resolving them via local state plus an `on*Change` callback pattern.
+- Animations consistently call `useReducedMotion()` and fall back to reduced-duration transitions when motion is disabled.
+- Styling uses the `cn(...)` utility to compose Tailwind classes, with semantic `data-*` attributes (`data-slot`, `data-state`, `data-from`, `data-align`, `data-variant`) for test selectors and styling hooks.
+- Collapsible sections use the shared `AgentDisclosure` primitive rather than ad-hoc expand/collapse logic, driven by `aria-expanded` / `aria-controls` paired with `useId`-generated IDs.
+- Reusable animation presets (`EASE_OUT`, `SPRING_PRESS`, `SPRING_SWAP`, `SPRING_LAYOUT`) from `@atlas/ui/lib/ease` are imported and applied instead of hard-coded transition objects.

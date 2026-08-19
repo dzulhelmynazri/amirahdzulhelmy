@@ -1,0 +1,1 @@
+Bun (package manager & runtime) + Turborepo (task orchestration) + TypeScript 6 + oxc-based lint/format via Ultracite presets; shared Zod env validation via @t3-oss/env, Drizzle ORM with Neon PostgreSQL, Better Auth for authentication, tRPC for typed server APIs, Next.js 14+ for the dashboard, and an Eve-based agent runtime.

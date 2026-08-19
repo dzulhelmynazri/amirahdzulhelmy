@@ -1,0 +1,28 @@
+{
+  "name": "routing-agent",
+  "version": "0.0.0",
+  "type": "module",
+  "imports": {
+    "#*": "./agent/*",
+    "#evals/*": "./evals/*"
+  },
+  "scripts": {
+    "build": "eve build",
+    "dev": "eve dev",
+    "eval": "eve eval --url http://localhost:3001/eve/agents/routing-agent",
+    "start": "eve start",
+    "typecheck": "tsc"
+  },
+  "dependencies": {
+    "@atlas/atlas-client": "workspace:*",
+    "@atlas/auth": "workspace:*",
+    "@vercel/connect": "0.4.3",
+    "ai": "^7.0.58",
+    "eve": "^0.39.0",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "24.x",
+    "typescript": "7.0.2"
+  }
+}

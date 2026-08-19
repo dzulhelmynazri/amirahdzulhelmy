@@ -1,0 +1,1 @@
+Eve v0.33.x agent framework, @composio/core + @composio/experimental for toolkit orchestration, @atlas/auth for session-based identity, Zod 4 for schema validation, Vercel Connect for deployment targeting, TypeScript 7 with strict mode and noEmit.

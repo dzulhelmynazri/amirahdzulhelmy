@@ -1,0 +1,1 @@
+Components must be rendered inside a `SmoothScroll` provider when they need scroll-driven values (e.g. `ScrollProgress`); outside the provider `useSmoothScroll` falls back to a native window listener so components still work unmounted. All components are client-only (`"use client"`) because they depend on browser APIs (`window`, `ResizeObserver`, `getBoundingClientRect`).

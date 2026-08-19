@@ -1,0 +1,5 @@
+- Each environment entry point exports a single `env` object created with `createEnv`, keeping configuration as a singleton import.
+- Every required environment variable is declared with an explicit Zod validator (e.g. `z.string().min(1)`, `z.url()`), and empty strings are coerced to undefined via `emptyStringAsUndefined: true`.
+- Optional or default values use Zod's `.optional()` or `.default(...)` rather than loose typing.
+- Validation can be disabled uniformly via the `SKIP_ENV_VALIDATION` process flag checked with `!!process.env.SKIP_ENV_VALIDATION`.
+- Server and client environments are strictly separated into distinct files (`server.ts`, `web.ts`) so secrets never leak to the browser.

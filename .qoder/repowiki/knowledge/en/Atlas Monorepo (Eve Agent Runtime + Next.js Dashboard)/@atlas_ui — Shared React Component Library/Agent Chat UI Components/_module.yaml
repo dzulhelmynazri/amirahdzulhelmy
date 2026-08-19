@@ -1,0 +1,8 @@
+schema_version: 1
+module_path: packages_ui/agents
+title: Agent Chat UI Components
+scope:
+  - packages/ui/src/components/agents/
+source_files: []
+depends_on: []
+related_to: []

@@ -1,0 +1,1 @@
+Environment variables are validated at import time; set `SKIP_ENV_VALIDATION=1` to bypass Zod checks during development. Server consumers must ensure a `.env` file is present because `dotenv/config` is imported in `src/server.ts`.

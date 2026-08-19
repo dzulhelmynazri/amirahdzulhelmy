@@ -1,0 +1,1 @@
+tRPC (`@trpc/server`, `@trpc/client`) with Zod validation, running on Next.js (`next`), using `dotenv` for environment loading and the workspace's `@atlas/auth` for session retrieval via `auth.api.getSession`; database layer uses Drizzle ORM (`drizzle-orm`) against `@atlas/db`.

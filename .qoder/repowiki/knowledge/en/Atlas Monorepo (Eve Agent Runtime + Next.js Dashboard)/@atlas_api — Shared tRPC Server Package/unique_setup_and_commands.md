@@ -1,0 +1,1 @@
+Package uses ESM (`"type": "module"`) and exposes its entry via `package.json` `exports` mapping so other workspace packages can import it as `@atlas/api` (with wildcard subpath exports enabled). No build scripts — TypeScript is consumed directly by the host project through workspace resolution.

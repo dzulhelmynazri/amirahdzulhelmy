@@ -1,0 +1,1 @@
+React + TypeScript with Base UI primitives, Tailwind CSS + shadcn (base-vega style), motion/react for animations, and Streamdown/Shiki for code rendering; published as a private `@atlas/ui` package consumed across the workspace.

@@ -1,0 +1,6 @@
+- Each component file declares a `ComponentProps<typeof X>`-based TypeScript interface paired with a default-exported function component that spreads `...props` onto the root element.
+- Styling is composed through the shared `cn` utility combining Tailwind classes with a user-supplied `className` prop, never via inline style objects or CSS modules.
+- Components are wrapped in `memo` (or exported as memoized functions) and use `useMemo`/`useCallback` for derived values and event handlers to avoid unnecessary re-renders.
+- Grouped sub-components share state via a module-scoped `createContext` + custom `useXxx` hook pattern (e.g. `MessageBranchContext`/`useMessageBranch`, `CodeBlockContext`) rather than prop drilling.
+- Async side effects follow a fire-and-forget pattern with a cache and subscriber map so callers can subscribe to results without blocking initial render (see Shiki highlighter in `code-block.tsx`).
+- Icons are imported from `lucide-react` and passed as children to `Button`/`MessageAction` with explicit `size` and `variant` defaults, keeping icon-only buttons consistent across the module.

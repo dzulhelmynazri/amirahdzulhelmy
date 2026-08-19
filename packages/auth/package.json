@@ -1,0 +1,25 @@
+{
+  "name": "@atlas/auth",
+  "type": "module",
+  "exports": {
+    ".": {
+      "default": "./src/index.ts"
+    },
+    "./*": {
+      "default": "./src/*.ts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@atlas/db": "workspace:*",
+    "@atlas/env": "workspace:*",
+    "better-auth": "catalog:",
+    "better-auth-telegram": "^2.0.1",
+    "dotenv": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@atlas/config": "workspace:*",
+    "typescript": "catalog:"
+  }
+}

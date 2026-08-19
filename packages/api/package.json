@@ -1,0 +1,28 @@
+{
+  "name": "@atlas/api",
+  "type": "module",
+  "exports": {
+    ".": {
+      "default": "./src/index.ts"
+    },
+    "./*": {
+      "default": "./src/*.ts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@atlas/auth": "workspace:*",
+    "@atlas/db": "workspace:*",
+    "@atlas/env": "workspace:*",
+    "@trpc/client": "catalog:",
+    "@trpc/server": "catalog:",
+    "dotenv": "catalog:",
+    "drizzle-orm": "^0.45.2",
+    "next": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@atlas/config": "workspace:*",
+    "typescript": "catalog:"
+  }
+}

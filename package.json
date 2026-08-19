@@ -1,0 +1,69 @@
+{
+  "name": "atlas",
+  "private": true,
+  "workspaces": {
+    "packages": [
+      "apps/*",
+      "packages/*"
+    ],
+    "catalog": {
+      "dotenv": "^17.4.2",
+      "zod": "^4.4.3",
+      "typescript": "^6.0.3",
+      "lucide-react": "^1.27.0",
+      "next": "^16.3.0",
+      "next-themes": "^0.4.6",
+      "react": "^19.2.8",
+      "react-dom": "^19.2.8",
+      "sonner": "^2.0.7",
+      "@trpc/server": "^11.18.0",
+      "@trpc/client": "^11.18.0",
+      "better-auth": "1.6.25",
+      "@tailwindcss/postcss": "^4.3.3",
+      "@types/react": "^19.2.17",
+      "@types/react-dom": "^19.2.3",
+      "tailwindcss": "^4.3.3"
+    }
+  },
+  "type": "module",
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "check-types": "turbo run check-types",
+    "dev:web": "turbo run dev -F web",
+    "eval": "turbo run eval --continue --concurrency=1",
+    "eval:fast": "turbo run eval --continue --concurrency=1 -- --tag fast",
+    "eval:live": "turbo run eval --continue --concurrency=1 -F booking-agent -F disruption-guard -F flight-guardian -F journey-concierge -F rebook-agent -F routing-agent -- --tag live",
+    "db:push": "turbo run db:push -F @atlas/db",
+    "db:studio": "turbo run db:studio -F @atlas/db",
+    "db:generate": "turbo run db:generate -F @atlas/db",
+    "db:migrate": "turbo run db:migrate -F @atlas/db",
+    "check": "ultracite check",
+    "env:link": "bash scripts/link-env.sh",
+    "fix": "ultracite fix",
+    "prepare": "husky"
+  },
+  "dependencies": {
+    "@atlas/env": "workspace:*",
+    "dotenv": "^17.4.2",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@atlas/config": "workspace:*",
+    "@types/node": "^22.20.1",
+    "husky": "latest",
+    "oxfmt": "latest",
+    "oxlint": "latest",
+    "ts-morph": "^28.0.0",
+    "turbo": "^2.10.10",
+    "typescript": "^6.0.3",
+    "ultracite": "7.9.4"
+  },
+  "overrides": {
+    "ai": "^7.0.58"
+  },
+  "engines": {
+    "node": "24.x"
+  },
+  "packageManager": "bun@1.3.14"
+}
