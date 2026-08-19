@@ -30,20 +30,27 @@ export class AtlasClient {
   }
 
   async post<T>(path: string, body: unknown): Promise<T> {
-    const response = await fetch(this.requestUrl(path), {
+    const url = this.requestUrl(path);
+    const response = await fetch(url, {
       body: JSON.stringify(body),
       headers: this.headers(),
       method: "POST",
     });
 
-    const data = (await response.json()) as T;
+    const text = await response.text();
 
     if (!response.ok) {
       throw new Error(
-        `Atlas API error ${response.status}: ${JSON.stringify(data)}`
+        `Atlas API error ${response.status} for ${url}: ${text.slice(0, 500)}`
       );
     }
 
-    return data;
+    try {
+      return JSON.parse(text) as T;
+    } catch {
+      throw new Error(
+        `Atlas API returned non-JSON response for ${url} (${response.headers.get("content-type") ?? "unknown content-type"}): ${text.slice(0, 200)}`
+      );
+    }
   }
 }

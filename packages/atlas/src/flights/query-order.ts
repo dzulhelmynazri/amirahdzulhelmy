@@ -13,6 +13,6 @@ export interface QueryOrderResponse {
 
 export const createQueryOrder = (client: AtlasClient) => ({
   query(input: QueryOrderRequest): Promise<QueryOrderResponse> {
-    return client.post<QueryOrderResponse>("/orderQuery.do", input);
+    return client.post<QueryOrderResponse>("/queryOrderDetails.do", input);
   },
 });
