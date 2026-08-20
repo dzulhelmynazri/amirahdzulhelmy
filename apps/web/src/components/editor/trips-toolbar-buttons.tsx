@@ -18,6 +18,7 @@ import {
   TodoListToolbarButton,
 } from "@atlas/ui/components/list-toolbar-button";
 import { MarkToolbarButton } from "@atlas/ui/components/mark-toolbar-button";
+import { TableToolbarButton } from "@atlas/ui/components/table-toolbar-button";
 import { ToolbarButton, ToolbarGroup } from "@atlas/ui/components/toolbar";
 import {
   BoldIcon,
@@ -164,6 +165,10 @@ export const TripsToolbarButtons = () => (
       >
         <StrikethroughIcon />
       </MarkToolbarButton>
+    </ToolbarGroup>
+
+    <ToolbarGroup>
+      <TableToolbarButton />
     </ToolbarGroup>
 
     <ToolbarGroup>

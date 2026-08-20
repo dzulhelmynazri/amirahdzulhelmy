@@ -66,7 +66,7 @@ const TripsEditor = ({ trip }: { trip: TripData }) => {
         <FixedToolbar className="p-3">
           <TripsToolbarButtons />
         </FixedToolbar>
-        <Editor className="min-h-full px-4 pt-4 pb-72" variant="none" />
+        <Editor className="min-h-full px-8 pt-4 pb-72" variant="none" />
       </EditorContainer>
     </Plate>
   );
