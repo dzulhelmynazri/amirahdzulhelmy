@@ -41,7 +41,7 @@ const DesktopLayout = ({
         <ResizablePanel className="flex flex-col" minSize="25%">
           {children}
         </ResizablePanel>
-        <ResizableHandle withHandle className="bg-transparent" />
+        <ResizableHandle className="bg-transparent" />
         <ResizablePanel defaultSize={550} maxSize="75%" minSize={550}>
           <AtlasAgent />
         </ResizablePanel>
@@ -55,20 +55,29 @@ const DesktopLayout = ({
 };
 
 export const AgentLayout = ({ children }: { children: React.ReactNode }) => {
-  const { isOpen, isFullWidth, toggleAgent } = useAgentSidebarSync();
+  const { isOpen, isFullWidth, openAgent, toggleAgent } = useAgentSidebarSync();
 
-  // ⌘I (macOS) / Ctrl+I toggles the side panel. Registered once here —
-  // AtlasAgent is mounted twice (mobile overlay + desktop panel).
+  // ⌘O (macOS) / Ctrl+O opens the side panel.
+  // ⌘I (macOS) / Ctrl+I toggles it.
+  // Registered once here — AtlasAgent is mounted twice (mobile + desktop).
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "i") {
+      const mod = event.metaKey || event.ctrlKey;
+      if (!mod) {
+        return;
+      }
+      const key = event.key.toLowerCase();
+      if (key === "o") {
+        event.preventDefault();
+        openAgent(true);
+      } else if (key === "i") {
         event.preventDefault();
         toggleAgent(false);
       }
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [toggleAgent]);
+  }, [openAgent, toggleAgent]);
 
   return (
     <>

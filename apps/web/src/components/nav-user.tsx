@@ -50,7 +50,7 @@ export const NavUser = () => {
   }
 
   const user = {
-    avatar: `https://api.dicebear.com/10.x/moods/svg?seed=${encodeURIComponent(
+    avatar: `https://api.dicebear.com/10.x/notionists/svg?seed=${encodeURIComponent(
       session.user.name
     )}`,
     email: session.user.email,
