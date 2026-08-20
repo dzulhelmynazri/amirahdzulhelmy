@@ -2,11 +2,12 @@
 
 import { PromptInput } from "@atlas/ui/components/agents/prompt-input";
 import { Button } from "@atlas/ui/components/button";
+import { Kbd, KbdGroup } from "@atlas/ui/components/kbd";
 import { cn } from "@atlas/ui/lib/utils";
 import { BorderBeam } from "border-beam";
 import { Maximize2Icon, Minimize2Icon, XIcon } from "lucide-react";
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { useAgentSidebarSync } from "@/hooks/use-agent-panel";
 
@@ -34,7 +35,7 @@ const AgentHeader = ({
   isFullWidth: boolean;
   toggleFullWidth: () => void;
 }) => (
-  <div className="flex h-[23px] shrink-0 items-center justify-between border-b px-4 transition-[height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
+  <div className="flex h-16 shrink-0 items-center justify-between border-b px-4 transition-[height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-[48.5px]">
     <div className="flex items-center gap-2.5">
       <Image
         alt={AGENT_NAME}
@@ -68,17 +69,21 @@ const AgentHeader = ({
 );
 
 const AgentEmptyState = () => (
-  <div className="flex flex-1 flex-col items-center justify-center p-6">
-    <div className="flex flex-col items-center gap-3 text-center">
-      <h3 className="font-semibold text-base">{AGENT_NAME}</h3>
-      <p className="text-muted-foreground text-sm">
-        Watching your trips. Ready to act.
-      </p>
-    </div>
+  <div className="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-center">
+    <h3 className="font-semibold text-base">{AGENT_NAME}</h3>
+    <p className="text-muted-foreground text-sm">
+      Watching your trips. Ready to act.
+    </p>
   </div>
 );
 
-const AgentComposer = ({ onSubmit }: { onSubmit: (text: string) => void }) => {
+const AgentComposer = ({
+  isFullWidth,
+  onSubmit,
+}: {
+  isFullWidth: boolean;
+  onSubmit: (text: string) => void;
+}) => {
   const [value, setValue] = useState("");
 
   return (
@@ -94,6 +99,14 @@ const AgentComposer = ({ onSubmit }: { onSubmit: (text: string) => void }) => {
             {suggestion}
           </button>
         ))}
+      </div>
+      <div className="flex items-center gap-1.5 text-muted-foreground text-xs">
+        Tips:
+        <KbdGroup>
+          <Kbd>⌘</Kbd>
+          <Kbd>{isFullWidth ? "I" : "O"}</Kbd>
+        </KbdGroup>
+        <span>{isFullWidth ? "to close" : "for full width"}</span>
       </div>
       <BorderBeam size="pulse-inner" colorVariant="colorful" strength={0.7}>
         <PromptInput
@@ -112,8 +125,27 @@ const AgentComposer = ({ onSubmit }: { onSubmit: (text: string) => void }) => {
 };
 
 export const AtlasAgent = () => {
-  const { isOpen, isFullWidth, closeAgent, mounted, toggleAgent } =
+  const { isOpen, isFullWidth, closeAgent, mounted, openAgent, toggleAgent } =
     useAgentSidebarSync();
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      const mod = event.metaKey || event.ctrlKey;
+      if (!mod) {
+        return;
+      }
+      const key = event.key.toLowerCase();
+      if (key === "o") {
+        event.preventDefault();
+        openAgent(true);
+      } else if (key === "i") {
+        event.preventDefault();
+        closeAgent();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [openAgent, closeAgent]);
 
   return (
     <aside
@@ -146,7 +178,10 @@ export const AtlasAgent = () => {
 
           <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col overflow-hidden">
             <AgentEmptyState />
-            <AgentComposer onSubmit={handleSuggestion} />
+            <AgentComposer
+              isFullWidth={isFullWidth}
+              onSubmit={handleSuggestion}
+            />
           </div>
         </div>
       </div>

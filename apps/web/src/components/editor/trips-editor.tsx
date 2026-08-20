@@ -62,7 +62,7 @@ const TripsEditor = ({ trip }: { trip: TripData }) => {
         scheduleSave(value);
       }}
     >
-      <EditorContainer variant="default">
+      <EditorContainer className="overflow-y-visible" variant="default">
         <FixedToolbar className="p-3">
           <TripsToolbarButtons />
         </FixedToolbar>
