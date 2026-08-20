@@ -55,7 +55,7 @@
     "oxfmt": "latest",
     "oxlint": "latest",
     "ts-morph": "^28.0.0",
-    "turbo": "^2.10.10",
+    "turbo": "^2.10.11",
     "typescript": "^6.0.3",
     "ultracite": "7.9.4"
   },
