@@ -34,7 +34,7 @@ export default async function ProtectedLayout({
         <AppSidebar variant="inset" />
         <AgentLayout>
           <DashboardContent>
-            <SidebarInset>
+            <SidebarInset className="m-2 ml-2 min-h-0 rounded-xl shadow-sm md:ml-0 md:group-has-data-[state=collapsed]/sidebar-wrapper:ml-2 lg:rounded-r-none">
               <header className="flex h-16 shrink-0 items-center justify-between gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
                 <div className="flex items-center gap-2 px-4">
                   <HeaderTitle />
@@ -45,7 +45,7 @@ export default async function ProtectedLayout({
                 </div>
               </header>
               <Separator />
-              <div className="flex flex-1 flex-col gap-4 p-4 pt-0 overflow-y-auto">
+              <div className="flex min-h-0 flex-1 flex-col gap-4 p-4 pt-0 overflow-y-auto">
                 {children}
               </div>
             </SidebarInset>
