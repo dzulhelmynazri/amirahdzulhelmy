@@ -12,12 +12,12 @@ import {
 import type { ReactNode } from "react";
 
 /**
- * Controls the docked "Ask AI" assistant panel that sits to the right of the
+ * Controls the docked "Ask AI" agent panel that sits to the right of the
  * dashboard content. The open state is lifted here so the site header trigger
  * and the panel itself can share it without prop drilling. Persisted to
  * localStorage so it survives navigation.
  */
-interface AssistantPanelContextValue {
+interface AgentPanelContextValue {
   isOpen: boolean;
   isFullWidth: boolean;
   mounted: boolean;
@@ -28,9 +28,9 @@ interface AssistantPanelContextValue {
   setSidebarStateBeforeOpen: (open: boolean) => void;
 }
 
-const STORAGE_KEY = "atlas:assistant-panel-open:v1";
-const FULL_WIDTH_STORAGE_KEY = "atlas:assistant-panel-full:v1";
-const SIDEBAR_SNAPSHOT_KEY = "atlas:assistant-sidebar-before-open:v1";
+const STORAGE_KEY = "atlas:agent-panel-open:v1";
+const FULL_WIDTH_STORAGE_KEY = "atlas:agent-panel-full:v1";
+const SIDEBAR_SNAPSHOT_KEY = "atlas:agent-sidebar-before-open:v1";
 
 const readStoredBoolean = (key: string, fallback: boolean): boolean => {
   if (typeof window === "undefined") {
@@ -61,15 +61,9 @@ const persistSidebarSnapshot = (next: boolean): void => {
   }
 };
 
-const AssistantPanelContext = createContext<AssistantPanelContextValue | null>(
-  null
-);
+const AgentPanelContext = createContext<AgentPanelContextValue | null>(null);
 
-export const AssistantPanelProvider = ({
-  children,
-}: {
-  children: ReactNode;
-}) => {
+export const AgentPanelProvider = ({ children }: { children: ReactNode }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isFullWidth, setIsFullWidth] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -127,7 +121,7 @@ export const AssistantPanelProvider = ({
     persistSidebarSnapshot(next);
   }, []);
 
-  const value = useMemo<AssistantPanelContextValue>(
+  const value = useMemo<AgentPanelContextValue>(
     () => ({
       close,
       getSidebarStateBeforeOpen,
@@ -150,28 +144,24 @@ export const AssistantPanelProvider = ({
     ]
   );
 
-  return (
-    <AssistantPanelContext value={value}>{children}</AssistantPanelContext>
-  );
+  return <AgentPanelContext value={value}>{children}</AgentPanelContext>;
 };
 
-export const useAssistantPanel = (): AssistantPanelContextValue => {
-  const context = use(AssistantPanelContext);
+export const useAgentPanel = (): AgentPanelContextValue => {
+  const context = use(AgentPanelContext);
   if (!context) {
-    throw new Error(
-      "useAssistantPanel must be used within an AssistantPanelProvider."
-    );
+    throw new Error("useAgentPanel must be used within an AgentPanelProvider.");
   }
   return context;
 };
 
 /**
- * Coordinates the assistant panel with the app sidebar. Opening the assistant
+ * Coordinates the agent panel with the app sidebar. Opening the agent
  * collapses the sidebar to make room; closing it restores whatever state the
  * sidebar had before opening (rather than always forcing it open). On mobile
  * the sidebar is an overlay, so we leave it untouched.
  */
-export const useAssistantSidebarSync = () => {
+export const useAgentSidebarSync = () => {
   const {
     isOpen,
     isFullWidth,
@@ -180,10 +170,10 @@ export const useAssistantSidebarSync = () => {
     close,
     getSidebarStateBeforeOpen,
     setSidebarStateBeforeOpen,
-  } = useAssistantPanel();
+  } = useAgentPanel();
   const { open: sidebarOpen, setOpen: setSidebarOpen, isMobile } = useSidebar();
 
-  const openAssistant = useCallback(
+  const openAgent = useCallback(
     (fullWidth = false) => {
       if (isOpen && isFullWidth === fullWidth) {
         return;
@@ -205,7 +195,7 @@ export const useAssistantSidebarSync = () => {
     ]
   );
 
-  const closeAssistant = useCallback(() => {
+  const closeAgent = useCallback(() => {
     if (!isOpen) {
       return;
     }
@@ -215,27 +205,27 @@ export const useAssistantSidebarSync = () => {
     close();
   }, [isOpen, isMobile, setSidebarOpen, getSidebarStateBeforeOpen, close]);
 
-  const toggleAssistant = useCallback(
+  const toggleAgent = useCallback(
     (fullWidth = false) => {
       if (isOpen) {
         if (isFullWidth === fullWidth) {
-          closeAssistant();
+          closeAgent();
         } else {
-          openAssistant(fullWidth);
+          openAgent(fullWidth);
         }
       } else {
-        openAssistant(fullWidth);
+        openAgent(fullWidth);
       }
     },
-    [isOpen, isFullWidth, closeAssistant, openAssistant]
+    [isOpen, isFullWidth, closeAgent, openAgent]
   );
 
   return {
-    closeAssistant,
+    closeAgent,
     isFullWidth,
     isOpen,
     mounted,
-    openAssistant,
-    toggleAssistant,
+    openAgent,
+    toggleAgent,
   };
 };

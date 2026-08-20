@@ -22,7 +22,7 @@ import {
   disconnectIntegration,
   getConnectedIntegrations,
 } from "@/app/actions/composio";
-import { useAssistantSidebarSync } from "@/hooks/use-assistant-panel";
+import { useAgentSidebarSync } from "@/hooks/use-agent-panel";
 
 const INTEGRATIONS = [
   {
@@ -38,7 +38,7 @@ const INTEGRATIONS = [
 ];
 
 export default function IntegrationsPage() {
-  const { isOpen } = useAssistantSidebarSync();
+  const { isOpen } = useAgentSidebarSync();
   const queryClient = useQueryClient();
 
   const { data: connectedIntegrations = [] } = useQuery({
