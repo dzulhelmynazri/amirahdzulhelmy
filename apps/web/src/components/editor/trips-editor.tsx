@@ -1,0 +1,68 @@
+"use client";
+
+import { Editor, EditorContainer } from "@atlas/ui/components/editor";
+import { FixedToolbar } from "@atlas/ui/components/fixed-toolbar";
+import { useMutation } from "@tanstack/react-query";
+import type { Value } from "platejs";
+import { Plate, usePlateEditor } from "platejs/react";
+import * as React from "react";
+
+import { TripsEditorKit } from "@/components/editor/trips-editor-kit";
+import { TripsToolbarButtons } from "@/components/editor/trips-toolbar-buttons";
+import { trpc } from "@/utils/trpc";
+
+interface TripData {
+  content?: unknown;
+  id: string;
+  title: string;
+}
+
+const defaultValue: Value = [{ children: [{ text: "" }], type: "p" }];
+
+const TripsEditor = ({ trip }: { trip: TripData }) => {
+  const saveTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const updateTrip = useMutation(trpc.trips.update.mutationOptions({}));
+
+  const initialValue = React.useMemo<Value>(() => {
+    if (trip.content) {
+      return trip.content as Value;
+    }
+    return defaultValue;
+  }, [trip.content]);
+
+  const editor = usePlateEditor({
+    plugins: TripsEditorKit,
+    value: initialValue,
+  });
+
+  const scheduleSave = React.useCallback(
+    (content: Value) => {
+      if (saveTimer.current) {
+        clearTimeout(saveTimer.current);
+      }
+      saveTimer.current = setTimeout(() => {
+        updateTrip.mutate({ content, id: trip.id });
+      }, 1500);
+    },
+    [trip.id, updateTrip]
+  );
+
+  return (
+    <Plate
+      editor={editor}
+      onChange={({ value }) => {
+        scheduleSave(value);
+      }}
+    >
+      <EditorContainer variant="default">
+        <FixedToolbar className="p-3">
+          <TripsToolbarButtons />
+        </FixedToolbar>
+        <Editor className="min-h-full px-4 pt-4 pb-72" variant="none" />
+      </EditorContainer>
+    </Plate>
+  );
+};
+
+export default TripsEditor;

@@ -20,6 +20,7 @@ import type { ReactNode } from "react";
 interface AssistantPanelContextValue {
   isOpen: boolean;
   isFullWidth: boolean;
+  mounted: boolean;
   open: (fullWidth?: boolean) => void;
   close: () => void;
   toggle: (fullWidth?: boolean) => void;
@@ -71,6 +72,7 @@ export const AssistantPanelProvider = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isFullWidth, setIsFullWidth] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   const [sidebarStateBeforeOpenValue, setSidebarStateBeforeOpenValue] =
     useState(true);
@@ -82,6 +84,7 @@ export const AssistantPanelProvider = ({
       setSidebarStateBeforeOpenValue(
         readStoredBoolean(SIDEBAR_SNAPSHOT_KEY, true)
       );
+      setMounted(true);
     });
 
     return () => {
@@ -130,6 +133,7 @@ export const AssistantPanelProvider = ({
       getSidebarStateBeforeOpen,
       isFullWidth,
       isOpen,
+      mounted,
       open,
       setSidebarStateBeforeOpen,
       toggle,
@@ -139,6 +143,7 @@ export const AssistantPanelProvider = ({
       getSidebarStateBeforeOpen,
       isFullWidth,
       isOpen,
+      mounted,
       open,
       setSidebarStateBeforeOpen,
       toggle,
@@ -170,6 +175,7 @@ export const useAssistantSidebarSync = () => {
   const {
     isOpen,
     isFullWidth,
+    mounted,
     open,
     close,
     getSidebarStateBeforeOpen,
@@ -228,6 +234,7 @@ export const useAssistantSidebarSync = () => {
     closeAssistant,
     isFullWidth,
     isOpen,
+    mounted,
     openAssistant,
     toggleAssistant,
   };

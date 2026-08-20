@@ -112,7 +112,7 @@ const AgentComposer = ({ onSubmit }: { onSubmit: (text: string) => void }) => {
 };
 
 export const AtlasAgent = () => {
-  const { isOpen, isFullWidth, closeAssistant, toggleAssistant } =
+  const { isOpen, isFullWidth, closeAssistant, mounted, toggleAssistant } =
     useAssistantSidebarSync();
 
   // ⌘I (macOS) / Ctrl+I toggles the side panel.
@@ -132,7 +132,8 @@ export const AtlasAgent = () => {
       aria-hidden={!isOpen}
       aria-label={ASSISTANT_TITLE}
       className={cn(
-        "flex shrink-0 flex-col overflow-hidden transition-[width,transform] duration-200 ease-in-out",
+        "flex shrink-0 flex-col overflow-hidden",
+        mounted && "transition-[width,transform] duration-200 ease-in-out",
         "fixed inset-y-0 right-0 z-50 w-full",
         isFullWidth ? "" : "max-w-[640px]",
         "lg:sticky lg:top-0 lg:z-auto lg:h-svh lg:self-start lg:transition-[width]",
