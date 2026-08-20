@@ -1,3 +1,5 @@
+"use client";
+
 import {
   Empty,
   EmptyDescription,
@@ -5,25 +7,59 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@atlas/ui/components/empty";
-import { PlaneTakeoff } from "lucide-react";
-import { Suspense } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { MousePointerClick } from "lucide-react";
 
-export default function TripsPage() {
-  return (
-    <Suspense fallback={<div>Loading...</div>}>
+import { trpc } from "@/utils/trpc";
+
+const TripsList = () => {
+  const trips = useQuery(trpc.trips.list.queryOptions());
+
+  if (trips.isLoading) {
+    return <div className="p-8 text-muted-foreground">Loading trips...</div>;
+  }
+
+  const tripList = trips.data ?? [];
+
+  if (tripList.length === 0) {
+    return (
       <div className="flex h-full min-h-[60vh] flex-col items-center justify-center p-4">
         <Empty>
           <EmptyHeader>
             <EmptyMedia>
-              <PlaneTakeoff />
+              <MousePointerClick />
             </EmptyMedia>
             <EmptyTitle>No trips yet</EmptyTitle>
             <EmptyDescription>
-              Tell your agent what you&apos;re planning.
+              Create a trip from the sidebar to get started.
             </EmptyDescription>
           </EmptyHeader>
         </Empty>
       </div>
-    </Suspense>
+    );
+  }
+
+  return (
+    <div className="flex h-full min-h-[60vh] flex-col items-center justify-center p-4">
+      <Empty>
+        <EmptyHeader>
+          <EmptyMedia>
+            <MousePointerClick />
+          </EmptyMedia>
+          <EmptyTitle>Select a trip</EmptyTitle>
+          <EmptyDescription>
+            Choose a trip from the sidebar to start editing.
+          </EmptyDescription>
+        </EmptyHeader>
+      </Empty>
+    </div>
+  );
+};
+
+export default function TripsPage() {
+  return (
+    <div className="h-full">
+      <TripsList />
+    </div>
   );
 }
