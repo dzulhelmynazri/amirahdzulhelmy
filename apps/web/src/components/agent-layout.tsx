@@ -38,18 +38,20 @@ const DesktopLayout = ({
   if (isOpen) {
     return (
       <ResizablePanelGroup className="hidden min-w-0 flex-1 lg:flex">
-        <ResizablePanel defaultSize="60%" minSize="25%">
+        <ResizablePanel className="flex flex-col" minSize="25%">
           {children}
         </ResizablePanel>
-        <ResizableHandle withHandle />
-        <ResizablePanel defaultSize="40%" maxSize="75%" minSize={640}>
+        <ResizableHandle withHandle className="bg-transparent" />
+        <ResizablePanel defaultSize={550} maxSize="75%" minSize={550}>
           <AtlasAgent />
         </ResizablePanel>
       </ResizablePanelGroup>
     );
   }
 
-  return <div className="hidden min-w-0 flex-1 lg:block">{children}</div>;
+  return (
+    <div className="hidden min-w-0 flex-1 flex-col lg:flex">{children}</div>
+  );
 };
 
 export const AgentLayout = ({ children }: { children: React.ReactNode }) => {

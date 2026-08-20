@@ -10,7 +10,7 @@ import { useState } from "react";
 
 import { useAgentSidebarSync } from "@/hooks/use-agent-panel";
 
-const AGENT_TITLE = "Flights & Aviation";
+const AGENT_NAME = "Flight Guardian";
 
 const SUGGESTIONS = [
   "What can you help me with?",
@@ -23,7 +23,7 @@ const handleSuggestion = (_text: string): void => {
   // noop until AI backend is integrated
 };
 
-const AVATAR_URL = `https://api.dicebear.com/10.x/moods/svg?seed=${encodeURIComponent(AGENT_TITLE)}`;
+const AVATAR_URL = `https://api.dicebear.com/10.x/moods/svg?seed=${encodeURIComponent(AGENT_NAME)}`;
 
 const AgentHeader = ({
   close,
@@ -34,17 +34,17 @@ const AgentHeader = ({
   isFullWidth: boolean;
   toggleFullWidth: () => void;
 }) => (
-  <div className="flex h-16 shrink-0 items-center justify-between border-b px-4 transition-[height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
+  <div className="flex h-[23px] shrink-0 items-center justify-between border-b px-4 transition-[height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
     <div className="flex items-center gap-2.5">
       <Image
-        alt={AGENT_TITLE}
-        className="size-7 rounded-md"
+        alt={AGENT_NAME}
+        className="size-7 rounded-md border border-border"
         height={28}
         src={AVATAR_URL}
         unoptimized
         width={28}
       />
-      <h2 className="font-semibold text-sm">{AGENT_TITLE}</h2>
+      <h2 className="font-semibold text-sm">{AGENT_NAME}</h2>
     </div>
     <div className="flex items-center gap-1">
       <Button
@@ -70,7 +70,7 @@ const AgentHeader = ({
 const AgentEmptyState = () => (
   <div className="flex flex-1 flex-col items-center justify-center p-6">
     <div className="flex flex-col items-center gap-3 text-center">
-      <h3 className="font-semibold text-base">Flight Guardian</h3>
+      <h3 className="font-semibold text-base">{AGENT_NAME}</h3>
       <p className="text-muted-foreground text-sm">
         Watching your trips. Ready to act.
       </p>
@@ -118,7 +118,7 @@ export const AtlasAgent = () => {
   return (
     <aside
       aria-hidden={!isOpen}
-      aria-label={AGENT_TITLE}
+      aria-label={AGENT_NAME}
       className={cn(
         "flex shrink-0 flex-col overflow-hidden",
         mounted && "transition-transform duration-200 ease-in-out",
@@ -137,7 +137,7 @@ export const AtlasAgent = () => {
           isOpen ? "opacity-100" : "pointer-events-none opacity-0"
         )}
       >
-        <div className="flex flex-1 flex-col overflow-hidden rounded-xl bg-background shadow-sm">
+        <div className="flex flex-1 flex-col overflow-hidden rounded-xl bg-background shadow-sm lg:rounded-l-none lg:border-l lg:border-border">
           <AgentHeader
             close={closeAgent}
             isFullWidth={isFullWidth}
