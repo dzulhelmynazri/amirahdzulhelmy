@@ -6,12 +6,12 @@ import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 
 import { AgentButton } from "@/components/agent-button";
+import { AgentLayout } from "@/components/agent-layout";
 import { AppSidebar } from "@/components/app-sidebar";
-import { AtlasAgent } from "@/components/atlas-agent";
 import { DashboardContent } from "@/components/dashboard-content";
 import { HeaderTitle } from "@/components/header-title";
 import { ModeToggle } from "@/components/mode-toggle";
-import { AssistantPanelProvider } from "@/hooks/use-assistant-panel";
+import { AgentPanelProvider } from "@/hooks/use-agent-panel";
 
 export const instant = false;
 
@@ -30,27 +30,28 @@ export default async function ProtectedLayout({
 
   return (
     <SidebarProvider className="h-svh overflow-hidden" defaultOpen={false}>
-      <AssistantPanelProvider>
+      <AgentPanelProvider>
         <AppSidebar variant="inset" />
-        <DashboardContent>
-          <SidebarInset>
-            <header className="flex h-16 shrink-0 items-center justify-between gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
-              <div className="flex items-center gap-2 px-4">
-                <HeaderTitle />
+        <AgentLayout>
+          <DashboardContent>
+            <SidebarInset>
+              <header className="flex h-16 shrink-0 items-center justify-between gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
+                <div className="flex items-center gap-2 px-4">
+                  <HeaderTitle />
+                </div>
+                <div className="flex items-center gap-2 px-4">
+                  <ModeToggle />
+                  <AgentButton />
+                </div>
+              </header>
+              <Separator />
+              <div className="flex flex-1 flex-col gap-4 p-4 pt-0 overflow-y-auto">
+                {children}
               </div>
-              <div className="flex items-center gap-2 px-4">
-                <ModeToggle />
-                <AgentButton />
-              </div>
-            </header>
-            <Separator />
-            <div className="flex flex-1 flex-col gap-4 p-4 pt-0 overflow-y-auto">
-              {children}
-            </div>
-          </SidebarInset>
-        </DashboardContent>
-        <AtlasAgent />
-      </AssistantPanelProvider>
+            </SidebarInset>
+          </DashboardContent>
+        </AgentLayout>
+      </AgentPanelProvider>
     </SidebarProvider>
   );
 }

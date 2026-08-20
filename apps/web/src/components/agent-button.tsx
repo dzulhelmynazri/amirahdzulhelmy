@@ -4,16 +4,16 @@ import { Button } from "@atlas/ui/components/button";
 import { Kbd, KbdGroup } from "@atlas/ui/components/kbd";
 import { BorderBeam } from "border-beam";
 
-import { useAssistantSidebarSync } from "@/hooks/use-assistant-panel";
+import { useAgentSidebarSync } from "@/hooks/use-agent-panel";
 
 export const AgentButton = () => {
-  const { isOpen, toggleAssistant } = useAssistantSidebarSync();
+  const { isOpen, toggleAgent } = useAgentSidebarSync();
 
   return (
     <BorderBeam size="pulse-inner" colorVariant="colorful" strength={0.7}>
       <Button
         aria-pressed={isOpen}
-        onClick={() => toggleAssistant(false)}
+        onClick={() => toggleAgent(false)}
         variant="outline"
       >
         <span className="px-1">Agent</span>
