@@ -287,7 +287,7 @@ function Morph({ size, speed, reduce }: PartProps) {
       <motion.path
         fill="currentColor"
         d={MORPH_PATHS[0]}
-        animate={reduce ? undefined : { d: MORPH_SEQ }}
+        animate={reduce ? undefined : { d: MORPH_SEQ as string[] }}
         transition={
           reduce
             ? undefined
