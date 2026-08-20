@@ -17,23 +17,30 @@ interface TripData {
   title: string;
 }
 
-const defaultValue: Value = [{ children: [{ text: "" }], type: "p" }];
+/** Fresh empty doc — never reuse node objects across editor instances. */
+const createEmptyValue = (): Value => [{ children: [{ text: "" }], type: "p" }];
+
+/**
+ * Clone so Slate's NODE_TO_PARENT WeakMap keys are unique per editor mount.
+ * Reusing the same node refs (shared defaultValue, React Query cache, Strict
+ * Mode remount) makes findPath throw "Unable to find the path for Slate node".
+ */
+const cloneEditorValue = (content: unknown): Value => {
+  if (!content) {
+    return createEmptyValue();
+  }
+  return structuredClone(content) as Value;
+};
 
 const TripsEditor = ({ trip }: { trip: TripData }) => {
   const saveTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const updateTrip = useMutation(trpc.trips.update.mutationOptions({}));
 
-  const initialValue = React.useMemo<Value>(() => {
-    if (trip.content) {
-      return trip.content as Value;
-    }
-    return defaultValue;
-  }, [trip.content]);
-
   const editor = usePlateEditor({
+    id: trip.id,
     plugins: TripsEditorKit,
-    value: initialValue,
+    value: () => cloneEditorValue(trip.content),
   });
 
   const scheduleSave = React.useCallback(
