@@ -15,6 +15,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@atlas/ui/components/dropdown-menu";
 import { Input } from "@atlas/ui/components/input";
@@ -26,6 +27,45 @@ import { usePathname, useRouter } from "next/navigation";
 import { memo, useCallback, useEffect, useRef, useState } from "react";
 
 import { trpc } from "@/utils/trpc";
+
+/** Extracts a plain-text preview from a Plate.js (Slate) content value. */
+const extractPreview = (content: unknown, max = 60): string => {
+  if (!Array.isArray(content)) {
+    return "";
+  }
+
+  const texts: string[] = [];
+  const walk = (node: unknown) => {
+    if (typeof node === "string") {
+      texts.push(node);
+      return;
+    }
+    if (Array.isArray(node)) {
+      for (const child of node) {
+        walk(child);
+      }
+      return;
+    }
+    if (node && typeof node === "object") {
+      const n = node as Record<string, unknown>;
+      if (typeof n.text === "string") {
+        texts.push(n.text);
+        return;
+      }
+      if (Array.isArray(n.children)) {
+        for (const child of n.children) {
+          walk(child);
+        }
+      }
+    }
+  };
+
+  walk(content);
+  const joined = texts.join(" ").replaceAll(/\s+/gu, " ").trim();
+  return joined.length > max
+    ? `${joined.slice(0, max - 1).trimEnd()}…`
+    : joined;
+};
 
 const TripRenameInput = memo(
   ({
@@ -142,7 +182,7 @@ export const TripsSidebar = () => {
   }, []);
 
   return (
-    <aside className="flex h-full w-64 shrink-0 flex-col border-r">
+    <aside className="flex h-full w-56 shrink-0 flex-col border-r">
       <div className="border-b p-3">
         <Button
           size="sm"
@@ -190,6 +230,7 @@ export const TripsSidebar = () => {
                 const href = `/trips/${trip.id}`;
                 const isActive = pathname === href;
                 const isEditing = editingId === trip.id;
+                const preview = extractPreview(trip.content);
 
                 return (
                   <div className="group relative" key={trip.id}>
@@ -201,18 +242,29 @@ export const TripsSidebar = () => {
                       />
                     ) : (
                       <Link
-                        className={`flex flex-col gap-0.5 rounded-md px-2 py-1.5 pr-7 text-sm transition-colors hover:bg-accent ${
+                        className={`flex flex-col gap-1 rounded-md px-2 py-1.5  text-sm transition-colors hover:bg-accent ${
                           isActive ? "bg-accent font-medium" : ""
                         }`}
                         href={href}
                       >
-                        <span className="truncate">{trip.title}</span>
-                        <span className="text-xs text-muted-foreground">
-                          {new Intl.DateTimeFormat("en", {
-                            day: "numeric",
-                            month: "short",
-                          }).format(new Date(trip.createdAt))}
-                        </span>
+                        <div className="flex items-baseline justify-between gap-2">
+                          <span className="truncate">{trip.title}</span>
+                          <span className="text-muted-foreground shrink-0 text-xs tabular-nums">
+                            {new Intl.DateTimeFormat("en", {
+                              day: "numeric",
+                              month: "short",
+                            }).format(new Date(trip.createdAt))}
+                          </span>
+                        </div>
+                        {preview ? (
+                          <span className="truncate font-normal text-muted-foreground text-xs">
+                            {preview}
+                          </span>
+                        ) : (
+                          <span className="truncate font-normal text-muted-foreground text-xs">
+                            No content
+                          </span>
+                        )}
                       </Link>
                     )}
                     {!isEditing && (
@@ -236,6 +288,7 @@ export const TripsSidebar = () => {
                           >
                             Rename
                           </DropdownMenuItem>
+                          <DropdownMenuSeparator />
                           <DropdownMenuItem
                             variant="destructive"
                             onClick={() =>
