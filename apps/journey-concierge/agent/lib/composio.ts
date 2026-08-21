@@ -1,4 +1,4 @@
-const JOURNEY_TOOLKITS = ["googlecalendar", "gmail", "google_maps"] as const;
+const JOURNEY_TOOLKITS = ["googlecalendar", "google_maps"] as const;
 
 const loadComposio = async () => {
   const { Composio } = await import("@composio/core");
