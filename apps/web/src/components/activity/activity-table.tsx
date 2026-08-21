@@ -48,6 +48,7 @@ import {
   categoryLabels,
   mockAlerts,
   severityLabels,
+  severityRank,
   statusLabels,
 } from "./activity-data";
 import type {
@@ -56,13 +57,6 @@ import type {
   AlertSeverity,
   AlertStatus,
 } from "./activity-data";
-
-const severityRank: Record<AlertSeverity, number> = {
-  critical: 3,
-  high: 2,
-  low: 0,
-  medium: 1,
-};
 
 const severityVariants: Record<
   AlertSeverity,
@@ -278,7 +272,7 @@ export const ActivityTable = () => {
       </div>
 
       <div className="rounded-lg border">
-        <Table>
+        <Table className="min-w-200">
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>

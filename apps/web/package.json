@@ -36,6 +36,7 @@
     "better-auth-telegram": "^2.0.1",
     "border-beam": "^1.3.0",
     "country-flag-icons": "^1.6.20",
+    "d3-geo": "^3.1.1",
     "dotenv": "catalog:",
     "eve": "^0.39.0",
     "lucide-react": "^1.31.0",
@@ -45,15 +46,20 @@
     "react": "catalog:",
     "react-dom": "catalog:",
     "sonner": "catalog:",
+    "topojson-client": "^3.1.0",
+    "world-atlas": "^2.0.2",
     "zod": "catalog:"
   },
   "devDependencies": {
     "@atlas/config": "workspace:*",
     "@tailwindcss/postcss": "catalog:",
     "@tanstack/react-query-devtools": "^5.101.4",
+    "@types/d3-geo": "^3.1.1",
     "@types/node": "^20.19.43",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
+    "@types/topojson-client": "^3.1.5",
+    "@types/topojson-specification": "^1.0.5",
     "tailwindcss": "catalog:",
     "typescript": "catalog:"
   }
