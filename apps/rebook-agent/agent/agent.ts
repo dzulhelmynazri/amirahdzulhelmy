@@ -9,6 +9,6 @@ export default defineAgent({
     maxOutputTokensPerSession: 200_000,
     sessionTimeoutMs: 7 * 24 * 60 * 60 * 1000,
   },
-  model: "zai/glm-5.2",
-  reasoning: "medium",
+  model: "alibaba/qwen3.7-flash",
+  reasoning: "low",
 });

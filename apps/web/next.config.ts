@@ -35,5 +35,6 @@ export default withEve(nextConfig, {
     "journey-concierge": "../journey-concierge",
     "rebook-agent": "../rebook-agent",
     "routing-agent": "../routing-agent",
+    "travel-sentinel": "../travel-sentinel",
   },
 });
