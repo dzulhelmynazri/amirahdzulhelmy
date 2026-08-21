@@ -14,6 +14,10 @@ const nextConfig: EveNextConfig = {
         hostname: "api.dicebear.com",
         protocol: "https",
       },
+      {
+        hostname: "flagcdn.com",
+        protocol: "https",
+      },
     ],
   },
   partialPrefetching: true,
