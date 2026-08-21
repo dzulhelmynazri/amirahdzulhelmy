@@ -13,6 +13,7 @@ APPS=(
   apps/disruption-guard
   apps/journey-concierge
   apps/flight-guardian
+  apps/travel-sentinel
 )
 
 relpath() {

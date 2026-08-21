@@ -13,15 +13,15 @@ const SPECIALISTS = {
     "Recovers disrupted trips: search replacements, book a new order, then void or refund the original. Use after a delay or cancellation.",
   "routing-agent":
     "Finds alternative routes, connections, airports, and dates. Read-only. Returns a routingIdentifier for booking-agent or rebook-agent.",
+  "travel-sentinel":
+    "Destination intelligence: news, safety alerts, weather events, transit disruptions, and travel advisories for upcoming trip destinations. Does not book or rebook flights.",
 } as const;
 
 export type AtlasSpecialist = keyof typeof SPECIALISTS;
 
 const atlasAgentOrigin = (): string => {
-  const origin = process.env.NEXT_PUBLIC_APP_URL;
-  if (!origin) {
-    throw new Error("Set NEXT_PUBLIC_APP_URL for remote agent URLs.");
-  }
+  const origin = process.env.NEXT_PUBLIC_APP_URL as string;
+
   return origin.endsWith("/") ? origin.slice(0, -1) : origin;
 };
 
