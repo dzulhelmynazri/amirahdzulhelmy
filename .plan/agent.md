@@ -12,10 +12,11 @@ The winning story is not “another chatbot that books flights” — it is **pr
 | --- | --- | --- |
 | Search & compare | `search`, `smart-search`, `price-compare-search` | routing-agent, rebook-agent, booking-agent |
 | Book end-to-end | `verify` → `create-order` → `confirm-order` → `payment` | booking-agent, rebook-agent |
-| Post-booking ops | `query-order`, `order-list`, `refunds`, `void` | rebook-agent, disruption-guard |
+| Post-booking ops | `query-order`, `order-list`, `refunds`, `void` | rebook-agent, disruption-guard, travel-sentinel |
 | Disruption signals | `webhook.incidents` | disruption-guard |
-| Trip context | `extract-pnr`, `email-query`, `query-order` | journey-concierge |
+| Trip context | `extract-pnr`, `email-query`, `query-order` | journey-concierge, travel-sentinel |
 | Route data | `route-export` | routing-agent |
+| Destination intel | Firecrawl MCP (search, scrape, crawl) | travel-sentinel |
 
 Each specialist is a focused **eve** app with only the tools it needs. Shared API access goes through `@atlas/atlas-client`. Flight Guardian does not call Atlas APIs.
 
@@ -27,7 +28,7 @@ Each specialist is a focused **eve** app with only the tools it needs. Shared AP
 
 ### 0. `apps/flight-guardian` — Conductor
 
-Front door for the web chat. No Atlas tools. Remote subagents: the five specialists below.
+Front door for the web chat. No Atlas tools. Remote subagents: the six specialists below.
 
 **UI:** `useEveAgent({ agent: "flight-guardian" })` (assistant panel is still a placeholder).
 
@@ -95,7 +96,23 @@ Connects flights to the rest of the trip via Composio.
 
 **Composio:** Google Calendar, Gmail, Google Maps (`lib/composio.ts`)
 
-**Demo moment:** “Your flight lands 22:30 at Haneda; last train to Shinjuku is 23:42 — here’s the plan, and I moved your hotel late-check-in note.”
+**Demo moment:** "Your flight lands 22:30 at Haneda; last train to Shinjuku is 23:42 — here's the plan, and I moved your hotel late-check-in note."
+
+---
+
+### 6. `apps/travel-sentinel` — Destination intelligence
+
+Keeps travelers informed about what's happening in countries and cities they are visiting or planning to visit.
+
+**Tools:** `query-order`, `order-list`, `recall-memory`, `save-memory`
+
+**Connection:** Firecrawl MCP (`agent/connections/firecrawl.ts`) — web search, scrape, crawl, and extract for travel advisories, safety alerts, weather events, and transit disruptions.
+
+**Schedule:** Every 6 hours (`schedules/travel-monitor.ts`) — scans upcoming trip destinations and surfaces new alerts.
+
+**Channels:** `eve` (web), `resend` (email alerts)
+
+**Demo moment:** "Your flight to Bangkok is fine, but there's flooding in the city center — I'd suggest rerouting your ground transfer. disruption-guard is monitoring your specific flight."
 
 ---
 
@@ -112,6 +129,7 @@ flowchart LR
 
   subgraph proactive [Proactive]
     DG[disruption-guard]
+    TS[travel-sentinel]
   end
 
   subgraph specialists [Specialists]
@@ -129,12 +147,17 @@ flowchart LR
   FG --> DG
   FG --> RB
   FG --> JC
+  FG --> TS
 
   DG -->|incident| RB
   DG -->|complex routing| RT
+  DG -->|country context| TS
+  TS -->|flight-impacting event| DG
+  TS -->|ground-plan change| JC
   RB -->|new ticket| BK
   DG -->|trip context| JC
   DG --> EMAIL
+  TS --> EMAIL
 ```
 
 Lead the demo with **disruption-guard → rebook-agent**. That is the narrative judges remember. Chat turns still enter through **flight-guardian**.
@@ -152,6 +175,7 @@ apps/
   booking-agent/        # Clean booking flow
   routing-agent/        # Flight-route optimization (read-only)
   journey-concierge/    # Composio multi-modal
+  travel-sentinel/      # Destination intelligence (Firecrawl MCP)
 
 packages/
   atlas/                # @atlas/atlas-client — shared API client
@@ -184,6 +208,11 @@ bun run env:link
 - `RESEND_API_KEY`
 - `RESEND_FROM_ADDRESS`
 
+**travel-sentinel:**
+
+- `FIRECRAWL_API_KEY` (Firecrawl MCP connection for web search and scraping)
+- Shares `DISRUPTION_OPS_EMAIL`, `RESEND_API_KEY`, `RESEND_FROM_ADDRESS` for email alerts
+
 **journey-concierge:**
 
 - `COMPOSIO_API_KEY` (+ user connects integrations at `/integrations`)
@@ -196,9 +225,10 @@ bun run env:link
 
 1. **0:00–0:30** — In Flight Guardian: book a flight (it calls `booking-agent`).
 2. **0:30–1:00** — `disruption-guard` schedule runs (or `POST .../dev/schedules/disruption-monitor`); show webhook incident.
-3. **1:00–2:00** — Email alert: “SQ123 delayed — 2 alternatives found.”
-4. **2:00–2:45** — In Flight Guardian: “rebook earliest”; it calls `rebook-agent` to verify, confirm price, book.
+3. **1:00–2:00** — Email alert: "SQ123 delayed — 2 alternatives found."
+4. **2:00–2:45** — In Flight Guardian: "rebook earliest"; it calls `rebook-agent` to verify, confirm price, book.
 5. **2:45–3:00** — Optional calendar update via `journey-concierge`.
+6. **Bonus** — `travel-sentinel` surfaces a destination alert: "Flooding in Bangkok — disruption-guard is monitoring your flight."
 
 ---
 
@@ -206,7 +236,7 @@ bun run env:link
 
 | Criterion | How this architecture helps |
 | --- | --- |
-| **Innovation (30%)** | Proactive disruption → auto-recovery, not reactive search |
-| **Feasibility (30%)** | Thin conductor + small specialists; shared `@atlas/atlas-client` |
-| **Qoder (20%)** | Multiple eve agents, remote subagents, schedules, channels, Composio |
-| **Demo (20%)** | One story: “Flight canceled → email alert → rebook → done” |
+| **Innovation (30%)** | Proactive disruption → auto-recovery, destination intelligence, not reactive search |
+| **Feasibility (30%)** | Thin conductor + small specialists; shared `@atlas/atlas-client`; Firecrawl MCP for web intel |
+| **Qoder (20%)** | Multiple eve agents, remote subagents, schedules, channels, Composio, MCP connections |
+| **Demo (20%)** | One story: "Flight canceled → email alert → rebook → done" + "destination alert before you even ask" |

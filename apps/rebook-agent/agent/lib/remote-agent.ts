@@ -18,10 +18,8 @@ const SPECIALISTS = {
 export type AtlasSpecialist = keyof typeof SPECIALISTS;
 
 const atlasAgentOrigin = (): string => {
-  const origin = process.env.NEXT_PUBLIC_APP_URL;
-  if (!origin) {
-    throw new Error("Set NEXT_PUBLIC_APP_URL for remote agent URLs.");
-  }
+  const origin = process.env.NEXT_PUBLIC_APP_URL as string;
+
   return origin.endsWith("/") ? origin.slice(0, -1) : origin;
 };
 

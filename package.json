@@ -33,7 +33,7 @@
     "dev:web": "turbo run dev -F web",
     "eval": "turbo run eval --continue --concurrency=1",
     "eval:fast": "turbo run eval --continue --concurrency=1 -- --tag fast",
-    "eval:live": "turbo run eval --continue --concurrency=1 -F booking-agent -F disruption-guard -F flight-guardian -F journey-concierge -F rebook-agent -F routing-agent -- --tag live",
+    "eval:live": "turbo run eval --continue --concurrency=1 -F booking-agent -F disruption-guard -F flight-guardian -F journey-concierge -F rebook-agent -F routing-agent -F travel-sentinel -- --tag live",
     "db:push": "turbo run db:push -F @atlas/db",
     "db:studio": "turbo run db:studio -F @atlas/db",
     "db:generate": "turbo run db:generate -F @atlas/db",

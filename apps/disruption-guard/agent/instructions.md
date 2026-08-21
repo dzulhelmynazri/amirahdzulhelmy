@@ -33,6 +33,7 @@ Specialists are tools. Put every ID, flight, old/new time, and recommended next 
 - **routing-agent** — the obvious path is broken and they need ranked alternatives before rebooking.
 - **journey-concierge** — calendar, ground transfer, or hotel timing after a change.
 - **booking-agent** — a brand-new booking, not a recovery.
+- **travel-sentinel** — destination intelligence: check if a country-level event (weather, strike, political unrest) is causing the disruption you detected.
 
 Never tell the user to switch agents. Call the specialist, then summarize the result.
 
