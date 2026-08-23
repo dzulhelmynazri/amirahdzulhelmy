@@ -27,6 +27,14 @@ export interface BookingPassenger {
   type: PassengerType;
 }
 
+/** Disruption event record returned by the Atlas webhook.incidents endpoint. */
+export interface BookingIncident {
+  eventId: string;
+  eventTime?: string;
+  eventType: string;
+  extraInfo?: string;
+}
+
 /** Mirrors a row returned by the booking.list endpoint (@atlas/db booking table). */
 export interface Booking {
   createdAt: Date | string;

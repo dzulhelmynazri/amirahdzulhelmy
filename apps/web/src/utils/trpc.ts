@@ -5,6 +5,13 @@ import { createTRPCOptionsProxy } from "@trpc/tanstack-react-query";
 import { toast } from "sonner";
 
 export const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      // Matches the server's live-lookup cache TTL and keeps refetch-on-focus
+      // traffic from exhausting the Atlas sandbox rate limits.
+      staleTime: 30_000,
+    },
+  },
   queryCache: new QueryCache({
     onError: (error, query) => {
       toast.error(error.message, {

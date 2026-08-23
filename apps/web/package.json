@@ -6,6 +6,7 @@
     "dev": "next dev --port 3001",
     "build": "next build",
     "check-types": "tsc --noEmit",
+    "db:seed-atlas": "bun scripts/seed-atlas-bookings.ts",
     "db:seed-bookings": "bun scripts/seed-bookings.ts",
     "start": "next start"
   },
@@ -41,6 +42,7 @@
     "country-flag-icons": "^1.6.20",
     "d3-geo": "^3.1.1",
     "dotenv": "catalog:",
+    "drizzle-orm": "^0.45.2",
     "eve": "^0.39.0",
     "lucide-react": "^1.31.0",
     "next": "catalog:",

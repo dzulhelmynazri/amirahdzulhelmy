@@ -8,7 +8,6 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@atlas/ui/components/sheet";
-import { Skeleton } from "@atlas/ui/components/skeleton";
 import { formatCurrency } from "@atlas/utils/currency";
 import { formatDate } from "@atlas/utils/date";
 import { useQuery } from "@tanstack/react-query";
@@ -18,14 +17,16 @@ import { statusLabels, statusVariants } from "@/types/bookings";
 import type { BookingStatus } from "@/types/bookings";
 import { trpc } from "@/utils/trpc";
 
+import { CardSkeleton } from "./card-skeleton";
 import { Details } from "./details";
+import { IncidentsCard } from "./incidents";
 
 const SheetSkeleton = () => (
   <div className="flex flex-col gap-4">
-    <Skeleton className="h-24 w-full rounded-lg" />
-    <Skeleton className="h-48 w-full rounded-lg" />
-    <Skeleton className="h-32 w-full rounded-lg" />
-    <Skeleton className="h-32 w-full rounded-lg" />
+    <CardSkeleton bodyLines={2} />
+    <CardSkeleton action bodyLines={4} />
+    <CardSkeleton bodyLines={3} />
+    <CardSkeleton bodyLines={3} />
   </div>
 );
 
@@ -69,7 +70,8 @@ export const DetailsSheet = () => {
               : "Loading booking details..."}
           </SheetDescription>
         </SheetHeader>
-        <div className="px-4 pb-4">
+        <div className="flex flex-col gap-4 px-4 pb-4">
+          {orderNo ? <IncidentsCard orderNo={orderNo} /> : null}
           {isLoading || !data ? (
             <SheetSkeleton />
           ) : (
