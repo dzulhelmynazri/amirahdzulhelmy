@@ -153,6 +153,7 @@
       "dependencies": {
         "@atlas/api": "workspace:*",
         "@atlas/auth": "workspace:*",
+        "@atlas/db": "workspace:*",
         "@atlas/env": "workspace:*",
         "@atlas/ui": "workspace:*",
         "@composio/core": "^0.16.0",

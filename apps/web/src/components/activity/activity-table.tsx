@@ -35,6 +35,7 @@ import {
   createColumnHelper,
   createSortedRowModel,
   rowSortingFeature,
+  sortFn_alphanumeric,
   tableFeatures,
   useTable,
 } from "@tanstack/react-table";
@@ -87,6 +88,7 @@ const dateFormatter = new Intl.DateTimeFormat("en-US", {
 
 const features = tableFeatures({
   rowSortingFeature,
+  sortFns: { alphanumeric: sortFn_alphanumeric },
   sortedRowModel: createSortedRowModel(),
 });
 
@@ -246,6 +248,7 @@ export const ActivityTable = () => {
             <Search />
           </InputGroupAddon>
           <InputGroupInput
+            aria-label="Search alerts"
             onChange={(event) => {
               const { value } = event.target;
               setGlobalFilter(value);

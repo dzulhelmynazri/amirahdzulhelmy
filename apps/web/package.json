@@ -6,11 +6,13 @@
     "dev": "next dev --port 3001",
     "build": "next build",
     "check-types": "tsc --noEmit",
+    "db:seed-bookings": "bun scripts/seed-bookings.ts",
     "start": "next start"
   },
   "dependencies": {
     "@atlas/api": "workspace:*",
     "@atlas/auth": "workspace:*",
+    "@atlas/db": "workspace:*",
     "@atlas/env": "workspace:*",
     "@atlas/ui": "workspace:*",
     "@composio/core": "^0.16.0",
