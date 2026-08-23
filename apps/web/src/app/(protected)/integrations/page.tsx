@@ -14,15 +14,12 @@ import {
   TooltipTrigger,
 } from "@atlas/ui/components/tooltip";
 import { cn } from "@atlas/ui/lib/utils";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plug, Unplug } from "lucide-react";
+import { toast } from "sonner";
 
-import {
-  connectIntegration,
-  disconnectIntegration,
-  getConnectedIntegrations,
-} from "@/app/actions/composio";
 import { useAgentSidebarSync } from "@/hooks/use-agent-panel";
+import { trpc } from "@/utils/trpc";
 
 const INTEGRATIONS = [
   {
@@ -35,27 +32,56 @@ const INTEGRATIONS = [
     id: "google_maps",
     title: "Google Maps",
   },
-];
+] as const;
 
 export default function IntegrationsPage() {
   const { isOpen } = useAgentSidebarSync();
   const queryClient = useQueryClient();
 
-  const { data: connectedIntegrations = [] } = useQuery({
-    queryFn: () => getConnectedIntegrations(),
-    queryKey: ["connectedIntegrations"],
-  });
+  const { data: connectedIntegrations = [] } = useQuery(
+    trpc.integration.connected.queryOptions()
+  );
+
+  const connect = useMutation(
+    trpc.integration.connect.mutationOptions({
+      onError: (error) => {
+        toast.error(error.message);
+      },
+      onSuccess: ({ redirectUrl }) => {
+        window.location.assign(redirectUrl);
+      },
+    })
+  );
+
+  const disconnect = useMutation(
+    trpc.integration.disconnect.mutationOptions({
+      onError: (error) => {
+        toast.error(error.message);
+      },
+      onSuccess: () => {
+        void queryClient.invalidateQueries(
+          trpc.integration.connected.queryFilter()
+        );
+      },
+    })
+  );
 
   return (
-    <div className="container py-6 mx-auto">
+    <div className="container mx-auto py-6">
       <div
         className={cn(
-          "grid grid-cols-1 gap-6 md:grid-cols-2 transition-all duration-300 ease-in-out",
+          "grid grid-cols-1 gap-6 transition-all duration-300 ease-in-out md:grid-cols-2",
           isOpen ? "lg:grid-cols-2" : "lg:grid-cols-4"
         )}
       >
         {INTEGRATIONS.map((integration) => {
           const isConnected = connectedIntegrations.includes(integration.id);
+          const isConnecting =
+            connect.isPending &&
+            connect.variables?.toolkitSlug === integration.id;
+          const isDisconnecting =
+            disconnect.isPending &&
+            disconnect.variables?.toolkitSlug === integration.id;
 
           return (
             <Card key={integration.id}>
@@ -72,14 +98,14 @@ export default function IntegrationsPage() {
                       <TooltipTrigger
                         render={
                           <Button
+                            disabled={isDisconnecting}
+                            onClick={() =>
+                              disconnect.mutate({
+                                toolkitSlug: integration.id,
+                              })
+                            }
                             size="icon-sm"
                             variant="destructive"
-                            onClick={async () => {
-                              await disconnectIntegration(integration.id);
-                              await queryClient.invalidateQueries({
-                                queryKey: ["connectedIntegrations"],
-                              });
-                            }}
                           >
                             <Unplug />
                           </Button>
@@ -92,9 +118,12 @@ export default function IntegrationsPage() {
                       <TooltipTrigger
                         render={
                           <Button
+                            disabled={isConnecting}
+                            onClick={() =>
+                              connect.mutate({ toolkitSlug: integration.id })
+                            }
                             size="icon-sm"
                             variant="outline"
-                            onClick={() => connectIntegration(integration.id)}
                           >
                             <Plug />
                           </Button>

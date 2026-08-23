@@ -1,5 +1,6 @@
 "use client";
 
+import type { AppRouter } from "@atlas/api/routers/index";
 import { Badge } from "@atlas/ui/components/badge";
 import { Button } from "@atlas/ui/components/button";
 import {
@@ -20,47 +21,40 @@ import {
 import { Skeleton } from "@atlas/ui/components/skeleton";
 import { cn } from "@atlas/ui/lib/utils";
 import { formatShortDate } from "@atlas/utils/date";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import type { inferRouterOutputs } from "@trpc/server";
 import { Bookmark, Luggage, Trash2 } from "lucide-react";
-import { useTransition } from "react";
 import { toast } from "sonner";
 
-import { removeSavedFare } from "@/app/actions/saved-fares";
+import { trpc } from "@/utils/trpc";
 
 import { airlines } from "./fares-data";
-import type { SavedFareRow } from "./use-fare-search";
-import { useFareSearch } from "./use-fare-search";
 
 const SKELETON_ROWS = ["a", "b", "c"];
 
+type SavedFareRow =
+  inferRouterOutputs<AppRouter>["fare"]["saved"]["list"][number];
+
 const airlineName = (code: string) => airlines[code]?.name ?? code;
 
-const SavedRow = ({
-  fare,
-  onRemoved,
-}: {
-  fare: SavedFareRow;
-  onRemoved: (id: string) => void;
-}) => {
-  const [isRemoving, startRemoving] = useTransition();
-
-  const handleRemove = () => {
-    startRemoving(async () => {
-      const result = await removeSavedFare(fare.id);
-
-      if (result.error) {
-        toast.error(result.error);
-        return;
-      }
-
-      onRemoved(fare.id);
-    });
-  };
+const SavedRow = ({ fare }: { fare: SavedFareRow }) => {
+  const queryClient = useQueryClient();
+  const removeSaved = useMutation(
+    trpc.fare.saved.remove.mutationOptions({
+      onError: (error) => {
+        toast.error(error.message);
+      },
+      onSuccess: () => {
+        void queryClient.invalidateQueries(trpc.fare.saved.list.queryFilter());
+      },
+    })
+  );
 
   return (
     <li
       className={cn(
         "group flex flex-col gap-2 rounded-xl border p-3 transition-opacity",
-        isRemoving && "opacity-50"
+        removeSaved.isPending && "opacity-50"
       )}
     >
       <div className="flex items-center gap-2.5">
@@ -83,8 +77,8 @@ const SavedRow = ({
         <Button
           aria-label={`Remove saved ${airlineName(fare.airline)} fare`}
           className="opacity-0 transition-opacity focus-visible:opacity-100 group-hover:opacity-100"
-          disabled={isRemoving}
-          onClick={handleRemove}
+          disabled={removeSaved.isPending}
+          onClick={() => removeSaved.mutate({ id: fare.id })}
           size="icon-sm"
           type="button"
           variant="ghost"
@@ -133,9 +127,11 @@ const SavedRow = ({
  * unused, and stays reachable from anywhere on the page.
  */
 export const SavedFaresSheet = () => {
-  const { removeSaved, savedFares } = useFareSearch();
+  const { data: rows = [], isPending } = useQuery(
+    trpc.fare.saved.list.queryOptions()
+  );
 
-  if (savedFares === null) {
+  if (isPending) {
     return <Skeleton className="h-8 w-24 rounded-full" />;
   }
 
@@ -143,16 +139,16 @@ export const SavedFaresSheet = () => {
     <Sheet>
       <SheetTrigger
         render={
-          <Button className="rounded-full" size="sm" variant="outline">
-            <Bookmark />
+          <Button size="sm" variant="outline">
+            <Bookmark data-icon="start-inline" />
             Saved
-            {savedFares.length > 0 ? (
-              <Badge variant="secondary">{savedFares.length}</Badge>
+            {rows.length > 0 ? (
+              <Badge variant="secondary">{rows.length}</Badge>
             ) : null}
           </Button>
         }
       />
-      <SheetContent className="gap-0" side="right">
+      <SheetContent className="max-w-lg!" showCloseButton={false}>
         <SheetHeader>
           <SheetTitle>Saved fares</SheetTitle>
           <SheetDescription>
@@ -162,7 +158,7 @@ export const SavedFaresSheet = () => {
         </SheetHeader>
 
         <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4">
-          {savedFares.length === 0 ? (
+          {rows.length === 0 ? (
             <Empty>
               <EmptyHeader>
                 <EmptyMedia>
@@ -177,8 +173,8 @@ export const SavedFaresSheet = () => {
             </Empty>
           ) : (
             <ul className="flex flex-col gap-2">
-              {savedFares.map((fare) => (
-                <SavedRow fare={fare} key={fare.id} onRemoved={removeSaved} />
+              {rows.map((fare) => (
+                <SavedRow fare={fare} key={fare.id} />
               ))}
             </ul>
           )}

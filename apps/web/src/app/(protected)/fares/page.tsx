@@ -1,8 +1,8 @@
 import { FareIdleState } from "@/components/fares/fare-idle-state";
 import { FareResults } from "@/components/fares/fare-results";
+import { FareSearchProvider } from "@/components/fares/fare-search-context";
 import { FareSearchPanel } from "@/components/fares/fare-search-panel";
-import { SavedFaresSheet } from "@/components/fares/saved-fares";
-import { FareSearchProvider } from "@/components/fares/use-fare-search";
+import { SavedFaresSheet } from "@/components/fares/saved-fares-sheet";
 
 export default function FaresPage() {
   return (

@@ -8,15 +8,14 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@atlas/ui/components/empty";
+import { useQuery } from "@tanstack/react-query";
 import { ArrowRight, Compass, Sparkles, TrendingUp } from "lucide-react";
-import { useEffect, useState } from "react";
 
-import type { PopularRoute } from "@/app/actions/fares";
-import { listPopularRoutes } from "@/app/actions/fares";
 import { useAgentSidebarSync } from "@/hooks/use-agent-panel";
+import { trpc } from "@/utils/trpc";
 
+import { useFareSearch } from "./fare-search-context";
 import { airportByCode } from "./fares-data";
-import { useFareSearch } from "./use-fare-search";
 
 const cityName = (code: string) => airportByCode.get(code)?.city ?? code;
 
@@ -64,26 +63,10 @@ const AgentPrompt = () => {
  */
 export const PopularRoutes = () => {
   const { runSearch, update } = useFareSearch();
-  const [routes, setRoutes] = useState<PopularRoute[] | null>(null);
+  const popular = useQuery(trpc.fare.popular.queryOptions());
+  const routes = popular.data;
 
-  useEffect(() => {
-    let active = true;
-
-    const load = async () => {
-      const rows = await listPopularRoutes();
-      if (active) {
-        setRoutes(rows);
-      }
-    };
-
-    void load();
-
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  const handlePick = (route: PopularRoute) => {
+  const handlePick = (route: NonNullable<typeof routes>[number]) => {
     const origin = airportByCode.get(route.origin) ?? null;
     const destination = airportByCode.get(route.destination) ?? null;
 
@@ -99,7 +82,7 @@ export const PopularRoutes = () => {
     <section className="flex flex-col gap-4">
       <AgentPrompt />
 
-      {routes !== null && routes.length > 0 ? (
+      {routes !== undefined && routes.length > 0 ? (
         <>
           <h3 className="flex items-center gap-2 font-semibold text-lg">
             <TrendingUp className="size-4 text-muted-foreground" />
@@ -131,7 +114,7 @@ export const PopularRoutes = () => {
         </>
       ) : null}
 
-      {routes !== null && routes.length === 0 ? (
+      {routes !== undefined && routes.length === 0 ? (
         <Empty>
           <EmptyHeader>
             <EmptyMedia>

@@ -13,6 +13,12 @@ const shortDateFormatter = new Intl.DateTimeFormat(LOCALE, {
   month: "short",
 });
 
+const weekdayDateFormatter = new Intl.DateTimeFormat(LOCALE, {
+  day: "numeric",
+  month: "short",
+  weekday: "short",
+});
+
 const dateTimeFormatter = new Intl.DateTimeFormat(LOCALE, {
   day: "numeric",
   hour: "numeric",
@@ -35,6 +41,10 @@ export const formatDate = (value: DateInput): string =>
 /** Formats a date as "Aug 23". */
 export const formatShortDate = (value: DateInput): string =>
   shortDateFormatter.format(new Date(value));
+
+/** Formats a date as "Sun, Aug 23". */
+export const formatWeekdayDate = (value: DateInput): string =>
+  weekdayDateFormatter.format(new Date(value));
 
 /** Formats a date and time as "Aug 23, 4:05 PM". */
 export const formatDateTime = (value: DateInput): string =>

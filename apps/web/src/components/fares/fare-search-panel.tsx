@@ -3,8 +3,8 @@
 import { useState } from "react";
 
 import { FareSearchBar, useIsSearchCollapsible } from "./fare-search-bar";
+import { useFareSearch } from "./fare-search-context";
 import { FareSearchForm } from "./fare-search-form";
-import { useFareSearch } from "./use-fare-search";
 
 /**
  * Decides whether the search shows as a full card or a summary bar.

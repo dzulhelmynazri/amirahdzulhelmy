@@ -1,26 +1,22 @@
 "use client";
 
 import { Button } from "@atlas/ui/components/button";
+import { formatShortDate } from "@atlas/utils/date";
+import { useQuery } from "@tanstack/react-query";
 import { ArrowRight, History } from "lucide-react";
-import { useEffect, useState } from "react";
 
-import type { RecentSearch } from "@/app/actions/fares";
-import { listRecentSearches } from "@/app/actions/fares";
+import { trpc } from "@/utils/trpc";
 
+import type { RecentSearch } from "./fare-search-context";
+import { useFareSearch } from "./fare-search-context";
 import { airportByCode } from "./fares-data";
-import { useFareSearch } from "./use-fare-search";
-
-const rangeFormatter = new Intl.DateTimeFormat("en-US", {
-  day: "numeric",
-  month: "short",
-});
 
 const formatDates = (search: RecentSearch) => {
-  const out = rangeFormatter.format(new Date(search.departureDate));
+  const out = formatShortDate(search.departureDate);
 
   return search.returnDate === null
     ? `${out} · one way`
-    : `${out} – ${rangeFormatter.format(new Date(search.returnDate))}`;
+    : `${out} – ${formatShortDate(search.returnDate)}`;
 };
 
 const cityName = (code: string) => airportByCode.get(code)?.city ?? code;
@@ -34,24 +30,7 @@ const cityName = (code: string) => airportByCode.get(code)?.city ?? code;
  */
 export const RecentSearches = () => {
   const { applyRecentSearch, results } = useFareSearch();
-  const [rows, setRows] = useState<RecentSearch[]>([]);
-
-  useEffect(() => {
-    let active = true;
-
-    const load = async () => {
-      const recent = await listRecentSearches();
-      if (active) {
-        setRows(recent);
-      }
-    };
-
-    void load();
-
-    return () => {
-      active = false;
-    };
-  }, []);
+  const { data: rows = [] } = useQuery(trpc.fare.recent.queryOptions());
 
   if (rows.length === 0 || results.hasSearched) {
     return null;

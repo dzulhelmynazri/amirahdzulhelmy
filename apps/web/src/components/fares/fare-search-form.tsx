@@ -33,6 +33,7 @@ import {
 } from "lucide-react";
 import type { FormEvent, ReactNode } from "react";
 
+import { useFareSearch } from "./fare-search-context";
 import {
   airportLabel,
   airports,
@@ -42,7 +43,6 @@ import {
   tripTypeLabels,
 } from "./fares-data";
 import type { Airport, CabinClass, TripType } from "./fares-data";
-import { useFareSearch } from "./use-fare-search";
 
 type FlagComponent = typeof countryFlags.MY;
 

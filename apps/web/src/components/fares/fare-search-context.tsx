@@ -1,20 +1,13 @@
 "use client";
 
+import type { AppRouter } from "@atlas/api/routers/index";
 import type { NormalizedFare } from "@atlas/atlas-client/fare-compare/types";
-import {
-  createContext,
-  use,
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-  useTransition,
-} from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import type { inferRouterOutputs } from "@trpc/server";
+import { createContext, use, useCallback, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 
-import { searchFares } from "@/app/actions/fares";
-import type { RecentSearch } from "@/app/actions/fares";
-import { listSavedFares } from "@/app/actions/saved-fares";
+import { trpc } from "@/utils/trpc";
 
 import { airportByCode, displayCurrency, minPassengers } from "./fares-data";
 import type { Airport, CabinClass, FareDeal, TripType } from "./fares-data";
@@ -49,7 +42,8 @@ export interface FareResultsState {
   searchedRoute?: string;
 }
 
-export type SavedFareRow = Awaited<ReturnType<typeof listSavedFares>>[number];
+export type RecentSearch =
+  inferRouterOutputs<AppRouter>["fare"]["recent"][number];
 
 interface FareSearchContextValue {
   applyDeal: (deal: FareDeal) => void;
@@ -57,10 +51,6 @@ interface FareSearchContextValue {
   applyRecentSearch: (recent: RecentSearch) => void;
   /** Drops the results and returns to the browse view, keeping the criteria. */
   backToBrowse: () => void;
-  /** `null` until the first load resolves, so the trigger can show a skeleton. */
-  savedFares: SavedFareRow[] | null;
-  addSaved: (fare: SavedFareRow) => void;
-  removeSaved: (id: string) => void;
   /** Names the fields still blocking a search, for the button hint. */
   blockingFields: string[];
   isSearching: boolean;
@@ -89,7 +79,7 @@ const defaultResults: FareResultsState = { fares: [], hasSearched: false };
 
 const FareSearchContext = createContext<FareSearchContextValue | null>(null);
 
-/** Atlas wants `YYYY-MM-DD` here; the action compacts it to `YYYYMMDD`. */
+/** Atlas wants `YYYY-MM-DD` here; the router compacts it to `YYYYMMDD`. */
 const toIsoDate = (date: Date) => {
   const month = `${date.getMonth() + 1}`.padStart(2, "0");
   const day = `${date.getDate()}`.padStart(2, "0");
@@ -103,39 +93,23 @@ const parseDealDate = (value: string) => {
 };
 
 export const FareSearchProvider = ({ children }: { children: ReactNode }) => {
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState<FareSearch>(defaultSearch);
   const [results, setResults] = useState<FareResultsState>(defaultResults);
-  const [isSearching, startSearching] = useTransition();
-  const [savedFares, setSavedFares] = useState<SavedFareRow[] | null>(null);
+  const [isSearching, setIsSearching] = useState(false);
 
-  // Loaded once here rather than in the sheet, so the trigger can show a count
-  // without opening, and a save updates both places at once.
-  useEffect(() => {
-    let active = true;
+  const { mutateAsync } = useMutation(
+    trpc.fare.search.mutationOptions({
+      onSuccess: (outcome) => {
+        if (outcome.error) {
+          return;
+        }
 
-    const load = async () => {
-      const rows = await listSavedFares();
-      if (active) {
-        setSavedFares(rows);
-      }
-    };
-
-    void load();
-
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  const addSaved = useCallback((fare: SavedFareRow) => {
-    setSavedFares((previous) => [fare, ...(previous ?? [])]);
-  }, []);
-
-  const removeSaved = useCallback((id: string) => {
-    setSavedFares((previous) =>
-      (previous ?? []).filter((row) => row.id !== id)
-    );
-  }, []);
+        void queryClient.invalidateQueries(trpc.fare.recent.queryFilter());
+        void queryClient.invalidateQueries(trpc.fare.popular.queryFilter());
+      },
+    })
+  );
 
   const update = useCallback((patch: Partial<FareSearch>) => {
     setSearch((previous) => ({ ...previous, ...patch }));
@@ -181,42 +155,60 @@ export const FareSearchProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
 
-      startSearching(async () => {
-        const outcome = await searchFares({
-          adults: passengers,
-          cabin,
-          children: 0,
-          currency: displayCurrency,
-          departureDate: toIsoDate(departure),
-          destination: destination.code,
-          infants: 0,
-          origin: origin.code,
-          ...(returnDate === undefined
-            ? {}
-            : { returnDate: toIsoDate(returnDate) }),
-        });
+      const searchedRoute = `${origin.city} → ${destination.city}`;
 
-        setResults({
-          fares: outcome.fares,
-          hasSearched: true,
-          searchedRoute: `${origin.city} → ${destination.city}`,
-          ...(outcome.error === undefined ? {} : { error: outcome.error }),
-          ...(outcome.nearbyDates === undefined
-            ? {}
-            : { nearbyDates: outcome.nearbyDates }),
-          ...(outcome.noResultMessage === undefined
-            ? {}
-            : { noResultMessage: outcome.noResultMessage }),
-          ...(outcome.requestId === undefined
-            ? {}
-            : { requestId: outcome.requestId }),
-          ...(outcome.searchId === undefined
-            ? {}
-            : { searchId: outcome.searchId }),
-        });
-      });
+      setIsSearching(true);
+
+      void (async () => {
+        try {
+          const outcome = await mutateAsync({
+            adults: passengers,
+            cabin,
+            children: 0,
+            currency: displayCurrency,
+            departureDate: toIsoDate(departure),
+            destination: destination.code,
+            infants: 0,
+            origin: origin.code,
+            ...(returnDate === undefined
+              ? {}
+              : { returnDate: toIsoDate(returnDate) }),
+          });
+
+          setResults({
+            fares: outcome.fares,
+            hasSearched: true,
+            searchedRoute,
+            ...(outcome.error === undefined ? {} : { error: outcome.error }),
+            ...(outcome.nearbyDates === undefined
+              ? {}
+              : { nearbyDates: outcome.nearbyDates }),
+            ...(outcome.noResultMessage === undefined
+              ? {}
+              : { noResultMessage: outcome.noResultMessage }),
+            ...(outcome.requestId === undefined
+              ? {}
+              : { requestId: outcome.requestId }),
+            ...(outcome.searchId === undefined
+              ? {}
+              : { searchId: outcome.searchId }),
+          });
+        } catch (error: unknown) {
+          setResults({
+            error:
+              error instanceof Error
+                ? error.message
+                : "We could not fetch fares right now. Please try again.",
+            fares: [],
+            hasSearched: true,
+            searchedRoute,
+          });
+        } finally {
+          setIsSearching(false);
+        }
+      })();
     },
-    [search]
+    [mutateAsync, search]
   );
 
   /**
@@ -278,34 +270,28 @@ export const FareSearchProvider = ({ children }: { children: ReactNode }) => {
 
   const value = useMemo<FareSearchContextValue>(
     () => ({
-      addSaved,
       applyDeal,
       applyRecentSearch,
       backToBrowse,
       blockingFields,
       isSearching,
-      removeSaved,
       reset,
       results,
       runSearch,
-      savedFares,
       search,
       searchOnDate,
       swapAirports,
       update,
     }),
     [
-      addSaved,
       applyDeal,
       applyRecentSearch,
       backToBrowse,
       blockingFields,
       isSearching,
-      removeSaved,
       reset,
       results,
       runSearch,
-      savedFares,
       search,
       searchOnDate,
       swapAirports,

@@ -7,6 +7,7 @@ export const createContext = async (req: NextRequest) => {
   });
   return {
     auth: null,
+    origin: req.nextUrl.origin,
     session,
   };
 };

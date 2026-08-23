@@ -1,0 +1,473 @@
+import { normalizeRoutings } from "@atlas/atlas-client/fare-compare/normalize";
+import type { NormalizedFare } from "@atlas/atlas-client/fare-compare/types";
+import { db } from "@atlas/db";
+import { fareSearch, savedFare } from "@atlas/db/schema/fares";
+import { TRPCError } from "@trpc/server";
+import { and, desc, eq, gt, sql } from "drizzle-orm";
+import { z } from "zod";
+
+import { protectedProcedure, router } from "../index";
+import { getAtlasClient } from "../lib/atlas";
+
+/** Atlas convention: status 0 on a response means the request succeeded. */
+const ATLAS_STATUS_OK = 0;
+
+const SEARCH_TIMEOUT_MS = 45_000;
+const MAX_ADULTS = 9;
+const MAX_CHILDREN = 8;
+const RECENT_SCAN_LIMIT = 30;
+const RECENT_SHOWN = 4;
+const POPULAR_LIMIT = 6;
+
+const IATA_PATTERN = /^[A-Z]{3}$/u;
+const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/u;
+const DATE_SEPARATOR = /-/gu;
+
+/**
+ * Atlas status codes rewritten for travellers. The raw strings are written for
+ * integrators ("Currency not supported for settlement") and must not reach the
+ * client. Anything unmapped falls back to a generic line — never the raw `msg`.
+ */
+const USER_FACING_ERRORS: Record<number, string> = {
+  105: "We do not sell this route yet.",
+  106: "Search is not available for this route right now.",
+  107: "This account cannot search right now. Please contact support.",
+  108: "This route is restricted.",
+  109: "We have hit today's search limit. Please try again tomorrow.",
+  110: "Too many searches at once. Wait a moment and try again.",
+  111: "Live pricing is not available for this route.",
+  112: "The airline took too long to respond. Please try again.",
+  113: "The airline's system is under maintenance. Try again later.",
+  124: "Fare search is misconfigured on our side. We are on it.",
+  900: "We could not authenticate with the fare provider.",
+  9999: "The fare provider had an internal error. Please try again.",
+};
+
+const GENERIC_ERROR = "We could not fetch fares right now. Please try again.";
+
+/** Human wording for an empty result, keyed by Atlas's `noResultReason.code`. */
+const NO_RESULT_MESSAGES: Record<string, string> = {
+  AIRLINE_NO_FLIGHT: "No airline flies this route on that date.",
+  FLIGHT_SOLD_OUT: "Every flight on this date is sold out.",
+  PRICE_FETCH_FAILED: "We reached the airlines but could not price this route.",
+  ROUTE_NOT_SUPPORTED: "We do not have fares for this route yet.",
+};
+
+const iata = (label: string) =>
+  z.string().regex(IATA_PATTERN, `${label} must be a 3-letter airport code.`);
+
+const isoDate = (label: string) =>
+  z.string().regex(ISO_DATE_PATTERN, `${label} is invalid.`);
+
+const searchInputSchema = z
+  .object({
+    adults: z
+      .number()
+      .int()
+      .min(1, `Adults must be between 1 and ${MAX_ADULTS}.`)
+      .max(MAX_ADULTS, `Adults must be between 1 and ${MAX_ADULTS}.`),
+    cabin: z.string().min(1),
+    children: z
+      .number()
+      .int()
+      .min(0, `Children must be between 0 and ${MAX_CHILDREN}.`)
+      .max(MAX_CHILDREN, `Children must be between 0 and ${MAX_CHILDREN}.`),
+    currency: z.string().length(3),
+    departureDate: isoDate("Departure date"),
+    destination: iata("Destination"),
+    infants: z.number().int().min(0),
+    origin: iata("Origin"),
+    returnDate: isoDate("Return date").optional(),
+  })
+  .refine((input) => input.origin !== input.destination, {
+    message: "Origin and destination must be different.",
+    path: ["destination"],
+  })
+  .refine((input) => input.infants <= input.adults, {
+    message: "Infants cannot outnumber adults.",
+    path: ["infants"],
+  });
+
+type SearchInput = z.infer<typeof searchInputSchema>;
+
+const saveInputSchema = z.object({
+  airline: z.string().min(1).max(8),
+  baggageIncluded: z.boolean(),
+  cabin: z.string().min(1).optional(),
+  currency: z.string().length(3),
+  flightNumbers: z.string().min(1).max(200),
+  priceAtSave: z.string().min(1),
+  routingIdentifier: z.string().min(1).optional(),
+  searchId: z.string().uuid().optional(),
+  stops: z.number().int().min(0).max(20),
+});
+
+export interface FareSearchOutcome {
+  error?: string;
+  fares: NormalizedFare[];
+  /** Nearby dates Atlas says do have flights, when this one has none. */
+  nearbyDates?: string[];
+  /** Why nothing came back, in plain language. */
+  noResultMessage?: string;
+  /** Atlas request id, worth surfacing when raising a support ticket. */
+  requestId?: string;
+  /** Row id in `fare_search`, so a fare can be saved against this search. */
+  searchId?: string;
+}
+
+interface SearchApiResponse {
+  msg?: string | null;
+  noResultReason?: unknown;
+  requestId?: unknown;
+  routings?: unknown;
+  status?: unknown;
+}
+
+const toCompactDate = (value: string) => value.replace(DATE_SEPARATOR, "");
+
+const isoFromCompact = (value: string) =>
+  value.length === 8
+    ? `${value.slice(0, 4)}-${value.slice(4, 6)}-${value.slice(6, 8)}`
+    : value;
+
+const asRecord = (value: unknown): Record<string, unknown> | undefined =>
+  typeof value === "object" && value !== null && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : undefined;
+
+/**
+ * Logs the search criteria and result count. Best-effort: a logging failure
+ * must never cost the traveller their results, so it is swallowed.
+ */
+const recordSearch = async (
+  userId: string,
+  input: SearchInput,
+  resultCount: number,
+  requestId: string | undefined
+): Promise<string | undefined> => {
+  const id = crypto.randomUUID();
+
+  try {
+    await db.insert(fareSearch).values({
+      adults: input.adults,
+      cabin: input.cabin,
+      children: input.children,
+      currency: input.currency,
+      departureDate: input.departureDate,
+      destination: input.destination,
+      id,
+      infants: input.infants,
+      origin: input.origin,
+      resultCount,
+      tripType: input.returnDate === undefined ? "one-way" : "round-trip",
+      userId,
+      ...(input.returnDate === undefined
+        ? {}
+        : { returnDate: input.returnDate }),
+      ...(requestId === undefined ? {} : { requestId }),
+    });
+    return id;
+  } catch {
+    return undefined;
+  }
+};
+
+/**
+ * Empty is not an error. Atlas often names the reason and offers nearby dates
+ * that do have flights — far more useful than a bare "no results".
+ */
+const emptyOutcome = (rawReason: unknown): FareSearchOutcome => {
+  const reason = asRecord(rawReason);
+  const code = typeof reason?.code === "string" ? reason.code : undefined;
+  const nearbyDates = Array.isArray(reason?.recentFlightDates)
+    ? reason.recentFlightDates
+        .filter((date): date is string => typeof date === "string")
+        .map(isoFromCompact)
+    : [];
+
+  return {
+    fares: [],
+    noResultMessage:
+      (code === undefined ? undefined : NO_RESULT_MESSAGES[code]) ??
+      "No flights found for these dates.",
+    ...(nearbyDates.length === 0 ? {} : { nearbyDates }),
+  };
+};
+
+const runSearch = async (
+  userId: string,
+  input: SearchInput
+): Promise<FareSearchOutcome> => {
+  const atlas = await getAtlasClient();
+  const departureDate = toCompactDate(input.departureDate);
+  const returnDate =
+    input.returnDate === undefined
+      ? undefined
+      : toCompactDate(input.returnDate);
+
+  let response: SearchApiResponse;
+
+  try {
+    // `/search.do` is the booking-flow search. `/priceCompareSearch.do` is
+    // reserved for pre-sales benchmarking and must not price this page.
+    response = await atlas.client.post<SearchApiResponse>(
+      "/search.do",
+      {
+        adultNum: input.adults,
+        cabinClass: input.cabin,
+        childNum: input.children,
+        currency: input.currency,
+        fromCity: input.origin,
+        fromDate: departureDate,
+        infantNum: input.infants,
+        toCity: input.destination,
+        tripType: returnDate === undefined ? "1" : "2",
+        ...(returnDate === undefined ? {} : { retDate: returnDate }),
+      },
+      { timeoutMs: SEARCH_TIMEOUT_MS }
+    );
+  } catch {
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
+      message: GENERIC_ERROR,
+    });
+  }
+
+  if (typeof response.status !== "number") {
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
+      message: GENERIC_ERROR,
+    });
+  }
+
+  const requestId =
+    typeof response.requestId === "string" ? response.requestId : undefined;
+
+  // Atlas signals business errors with a non-zero status inside an HTTP 200.
+  // Returned (not thrown) so the page can still show `requestId`.
+  if (response.status !== ATLAS_STATUS_OK) {
+    console.error("Atlas search failed", {
+      requestId,
+      status: response.status,
+    });
+
+    return {
+      error: USER_FACING_ERRORS[response.status] ?? GENERIC_ERROR,
+      fares: [],
+      ...(requestId === undefined ? {} : { requestId }),
+    };
+  }
+
+  const fares = normalizeRoutings(response.routings, {
+    airlines: [],
+    currency: input.currency,
+    departureDate,
+    destination: input.destination,
+    id: `${input.origin}-${input.destination}`,
+    origin: input.origin,
+    passengers: {
+      adults: input.adults,
+      children: input.children,
+      infants: input.infants,
+    },
+    ...(returnDate === undefined ? {} : { returnDate }),
+  });
+
+  const searchId = await recordSearch(userId, input, fares.length, requestId);
+
+  if (fares.length > 0) {
+    return {
+      fares,
+      ...(searchId === undefined ? {} : { searchId }),
+      ...(requestId === undefined ? {} : { requestId }),
+    };
+  }
+
+  return {
+    ...emptyOutcome(response.noResultReason),
+    ...(searchId === undefined ? {} : { searchId }),
+    ...(requestId === undefined ? {} : { requestId }),
+  };
+};
+
+const savedFareRouter = router({
+  /**
+   * Saving a fare stores a **snapshot**, not a bookable offer. Atlas expires
+   * `routingIdentifier`, so a saved row goes stale — re-search and verify
+   * before anyone tries to buy it.
+   */
+  create: protectedProcedure
+    .input(saveInputSchema)
+    .mutation(async ({ ctx, input }) => {
+      const id = crypto.randomUUID();
+
+      try {
+        const [row] = await db
+          .insert(savedFare)
+          .values({
+            airline: input.airline,
+            baggageIncluded: input.baggageIncluded,
+            currency: input.currency,
+            flightNumbers: input.flightNumbers,
+            id,
+            priceAtSave: input.priceAtSave,
+            stops: input.stops,
+            userId: ctx.session.user.id,
+            ...(input.cabin === undefined ? {} : { cabin: input.cabin }),
+            ...(input.routingIdentifier === undefined
+              ? {}
+              : { routingIdentifier: input.routingIdentifier }),
+            ...(input.searchId === undefined
+              ? {}
+              : { searchId: input.searchId }),
+          })
+          .returning();
+
+        if (!row) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Could not save that fare. Please try again.",
+          });
+        }
+
+        return row;
+      } catch (error) {
+        if (error instanceof TRPCError) {
+          throw error;
+        }
+
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Could not save that fare. Please try again.",
+        });
+      }
+    }),
+
+  list: protectedProcedure.query(({ ctx }) =>
+    db
+      .select()
+      .from(savedFare)
+      .where(eq(savedFare.userId, ctx.session.user.id))
+      .orderBy(desc(savedFare.createdAt))
+  ),
+
+  remove: protectedProcedure
+    .input(z.object({ id: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      // Scoped to the owner so an id alone cannot delete someone else's row.
+      const [row] = await db
+        .delete(savedFare)
+        .where(
+          and(
+            eq(savedFare.id, input.id),
+            eq(savedFare.userId, ctx.session.user.id)
+          )
+        )
+        .returning();
+
+      if (!row) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Could not remove that fare.",
+        });
+      }
+
+      return row;
+    }),
+});
+
+export const fareRouter = router({
+  /**
+   * Routes this traveller actually searched, ranked by how often.
+   *
+   * A route with a real search count says something true and costs no Atlas
+   * quota to display.
+   */
+  popular: protectedProcedure.query(({ ctx }) =>
+    db
+      .select({
+        destination: fareSearch.destination,
+        lastSearchedAt: sql<Date>`max(${fareSearch.createdAt})`,
+        origin: fareSearch.origin,
+        searches: sql<number>`count(*)::int`,
+      })
+      .from(fareSearch)
+      .where(
+        and(
+          eq(fareSearch.userId, ctx.session.user.id),
+          gt(fareSearch.resultCount, 0)
+        )
+      )
+      .groupBy(fareSearch.origin, fareSearch.destination)
+      .orderBy(desc(sql`count(*)`))
+      .limit(POPULAR_LIMIT)
+  ),
+
+  /**
+   * The last few distinct searches, newest first.
+   *
+   * Repeats are collapsed so running the same route twice does not fill the
+   * list with one trip.
+   */
+  recent: protectedProcedure.query(async ({ ctx }) => {
+    const rows = await db
+      .select()
+      .from(fareSearch)
+      .where(eq(fareSearch.userId, ctx.session.user.id))
+      .orderBy(desc(fareSearch.createdAt))
+      .limit(RECENT_SCAN_LIMIT);
+
+    const seen = new Set<string>();
+    const recent: {
+      adults: number;
+      cabin: string;
+      departureDate: string;
+      destination: string;
+      id: string;
+      origin: string;
+      resultCount: number;
+      returnDate: string | null;
+    }[] = [];
+
+    for (const row of rows) {
+      const key = [
+        row.origin,
+        row.destination,
+        row.departureDate,
+        row.returnDate ?? "ow",
+      ].join("|");
+
+      if (seen.has(key)) {
+        continue;
+      }
+
+      seen.add(key);
+      recent.push({
+        adults: row.adults,
+        cabin: row.cabin,
+        departureDate: row.departureDate,
+        destination: row.destination,
+        id: row.id,
+        origin: row.origin,
+        resultCount: row.resultCount,
+        returnDate: row.returnDate,
+      });
+
+      if (recent.length === RECENT_SHOWN) {
+        break;
+      }
+    }
+
+    return recent;
+  }),
+
+  saved: savedFareRouter,
+
+  /**
+   * Live Atlas search. Mutation, not query: it writes `fare_search`, takes up
+   * to 45s, and must never refetch on focus or we burn daily quota.
+   */
+  search: protectedProcedure
+    .input(searchInputSchema)
+    .mutation(({ ctx, input }) => runSearch(ctx.session.user.id, input)),
+});

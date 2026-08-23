@@ -1,8 +1,8 @@
 "use client";
 
+import { useFareSearch } from "./fare-search-context";
 import { PopularRoutes } from "./popular-routes";
 import { RecentSearches } from "./recent-searches";
-import { useFareSearch } from "./use-fare-search";
 
 /**
  * What the page shows before anything has been searched.

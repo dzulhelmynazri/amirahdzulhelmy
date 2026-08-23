@@ -15,6 +15,7 @@
     "@atlas/auth": "workspace:*",
     "@atlas/db": "workspace:*",
     "@atlas/env": "workspace:*",
+    "@composio/core": "^0.16.0",
     "@trpc/client": "catalog:",
     "@trpc/server": "catalog:",
     "dotenv": "catalog:",

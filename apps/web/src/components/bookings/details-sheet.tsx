@@ -52,10 +52,7 @@ export const DetailsSheet = () => {
       }}
       open={orderNo !== null}
     >
-      <SheetContent
-        showCloseButton={false}
-        className="data-[side=right]:sm:max-w-3xl overflow-y-auto data-[side=right]:inset-y-4 data-[side=right]:right-4 data-[side=right]:h-auto data-[side=right]:rounded-2xl data-[side=right]:border data-[side=right]:shadow-2xl"
-      >
+      <SheetContent showCloseButton={false}>
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2 pr-10">
             {orderNo}

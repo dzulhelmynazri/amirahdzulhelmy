@@ -2,8 +2,8 @@
 
 import { Pencil, Users } from "lucide-react";
 
+import { useFareSearch } from "./fare-search-context";
 import { cabinLabels } from "./fares-data";
-import { useFareSearch } from "./use-fare-search";
 
 const dateFormatter = new Intl.DateTimeFormat("en-GB", {
   day: "numeric",

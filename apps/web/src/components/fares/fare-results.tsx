@@ -15,6 +15,9 @@ import {
 } from "@atlas/ui/components/empty";
 import { Skeleton } from "@atlas/ui/components/skeleton";
 import { cn } from "@atlas/ui/lib/utils";
+import { formatWeekdayDate } from "@atlas/utils/date";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import dedent from "dedent";
 import {
   ArrowLeft,
   Bookmark,
@@ -26,14 +29,14 @@ import {
   Sparkles,
   TriangleAlert,
 } from "lucide-react";
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
-import { saveFare } from "@/app/actions/saved-fares";
 import { useAgentSidebarSync } from "@/hooks/use-agent-panel";
+import { trpc } from "@/utils/trpc";
 
+import { useFareSearch } from "./fare-search-context";
 import { airlines } from "./fares-data";
-import { useFareSearch } from "./use-fare-search";
 
 const MINUTES_PER_HOUR = 60;
 const SKELETON_ROWS = ["a", "b", "c"];
@@ -47,12 +50,6 @@ const SORT_LABELS: Record<SortKey, string> = {
 };
 
 const SORT_ORDER: SortKey[] = ["cheapest", "fastest", "earliest"];
-
-const dayFormatter = new Intl.DateTimeFormat("en-GB", {
-  day: "numeric",
-  month: "short",
-  weekday: "short",
-});
 
 const formatDuration = (minutes: number | undefined) => {
   if (minutes === undefined || minutes <= 0) {
@@ -134,20 +131,18 @@ const buildHandoff = (fare: NormalizedFare, passengers: number) => {
   const inbound = fare.inbound
     ? `\nReturn: ${fare.inbound.flightNumbers.join("/")} ${fare.inbound.departureAirport} ${fare.inbound.departureTime} to ${fare.inbound.arrivalAirport} ${fare.inbound.arrivalTime} on ${fare.inbound.date}`
     : "";
+  const cabin = fare.cabin ? `\nFare family: ${fare.cabin}` : "";
 
-  return [
-    `I want to book this flight — please verify it is still available and walk me through booking.`,
-    "",
-    `Route: ${fare.origin} to ${fare.destination}`,
-    `Outbound: ${outbound}${inbound}`,
-    `Airline: ${airlineName(fare.airline)} (${fare.airline})`,
-    `Price quoted: ${money(fare.adultTotal, fare.currency)} per adult, ${passengers} traveller${passengers === 1 ? "" : "s"}`,
-    fare.cabin ? `Fare family: ${fare.cabin}` : "",
-    `Baggage: ${fare.baggage.description}`,
-    `routingIdentifier: ${fare.routingIdentifier ?? "unavailable"}`,
-  ]
-    .filter(Boolean)
-    .join("\n");
+  return dedent`
+    I want to book this flight — please verify it is still available and walk me through booking.
+
+    Route: ${fare.origin} to ${fare.destination}
+    Outbound: ${outbound}${inbound}
+    Airline: ${airlineName(fare.airline)} (${fare.airline})
+    Price quoted: ${money(fare.adultTotal, fare.currency)} per adult, ${passengers} traveller${passengers === 1 ? "" : "s"}${cabin}
+    Baggage: ${fare.baggage.description}
+    routingIdentifier: ${fare.routingIdentifier ?? "unavailable"}
+  `;
 };
 
 const BookWithAgentButton = ({ fare }: { fare: NormalizedFare }) => {
@@ -176,44 +171,43 @@ const SaveFareButton = ({
   fare: NormalizedFare;
   searchId: string | undefined;
 }) => {
-  const { addSaved } = useFareSearch();
+  const queryClient = useQueryClient();
   const [saved, setSaved] = useState(false);
-  const [isSaving, startSaving] = useTransition();
+  const saveFare = useMutation(
+    trpc.fare.saved.create.mutationOptions({
+      onError: (error) => {
+        toast.error(error.message);
+      },
+      onSuccess: () => {
+        setSaved(true);
+        toast.success("Saved", {
+          description: "Find it under Saved at the top of the page.",
+        });
+        void queryClient.invalidateQueries(trpc.fare.saved.list.queryFilter());
+      },
+    })
+  );
 
   const handleSave = () => {
-    startSaving(async () => {
-      const result = await saveFare(fare, searchId);
-
-      if (result.error || !result.id) {
-        toast.error(result.error ?? "Could not save that fare.");
-        return;
-      }
-
-      setSaved(true);
-      addSaved({
-        airline: fare.airline,
-        baggageIncluded: fare.baggage.included,
-        cabin: fare.cabin ?? null,
-        createdAt: new Date(),
-        currency: fare.currency,
-        flightNumbers: fare.flightNumbers.join(" "),
-        id: result.id,
-        priceAtSave: fare.adultTotal.toFixed(2),
-        routingIdentifier: fare.routingIdentifier ?? null,
-        searchId: searchId ?? null,
-        stops: fare.stops,
-        userId: "",
-      });
-      toast.success("Saved", {
-        description: "Find it under Saved at the top of the page.",
-      });
+    saveFare.mutate({
+      airline: fare.airline,
+      baggageIncluded: fare.baggage.included,
+      currency: fare.currency,
+      flightNumbers: fare.flightNumbers.join(" "),
+      priceAtSave: fare.adultTotal.toFixed(2),
+      stops: fare.stops,
+      ...(fare.cabin === undefined ? {} : { cabin: fare.cabin }),
+      ...(fare.routingIdentifier === undefined
+        ? {}
+        : { routingIdentifier: fare.routingIdentifier }),
+      ...(searchId === undefined ? {} : { searchId }),
     });
   };
 
   return (
     <Button
       aria-label={saved ? "Fare saved" : "Save this fare"}
-      disabled={isSaving || saved}
+      disabled={saveFare.isPending || saved}
       onClick={handleSave}
       size="icon-sm"
       type="button"
@@ -412,7 +406,7 @@ const NoResultsState = () => {
                 variant="outline"
               >
                 <CalendarDays />
-                {dayFormatter.format(new Date(date))}
+                {formatWeekdayDate(date)}
               </Button>
             ))}
           </div>
