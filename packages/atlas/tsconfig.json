@@ -1,0 +1,9 @@
+{
+  "extends": "@atlas/config/tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "strictNullChecks": true,
+    "types": ["node", "bun"]
+  },
+  "include": ["src/**/*.ts"]
+}

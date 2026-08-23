@@ -1,0 +1,10 @@
+{
+  "origins": ["KUL", "PEN"],
+  "destinations": ["SIN", "BKK", "CGK"],
+  "departureDates": ["2026-09-15", "2026-10-15"],
+  "returnDates": [null],
+  "currencies": ["USD"],
+  "airlineFilters": [[]],
+  "passengers": [{ "adults": 1, "children": 0, "infants": 0 }],
+  "skipSameCityPairs": true
+}
