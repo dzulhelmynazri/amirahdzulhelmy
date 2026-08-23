@@ -42,6 +42,7 @@ import { trpc } from "@/utils/trpc";
 
 import { useFareSearch } from "./fare-search-context";
 import { airlines } from "./fares-data";
+import { FlexibleDates } from "./flexible-dates";
 
 const MINUTES_PER_HOUR = 60;
 
@@ -512,6 +513,60 @@ const countLabel = (
   return count === 1 ? "flight" : "flights";
 };
 
+/**
+ * One back control the whole way: returns -> outbound list -> browse. Without
+ * it a search was a one-way door; the only escape was the reset icon buried in
+ * the search card, which also wiped the criteria.
+ */
+const ResultsHeader = ({
+  isRoundTrip,
+  listCount,
+  onBack,
+  route,
+  selectedLeg,
+  showingReturns,
+}: {
+  isRoundTrip: boolean;
+  listCount: number;
+  onBack: () => void;
+  route: string | undefined;
+  selectedLeg: FareLeg | undefined;
+  showingReturns: boolean;
+}) => (
+  <div className="flex flex-col gap-2">
+    <Button
+      className="-ml-2 self-start text-muted-foreground"
+      onClick={onBack}
+      size="sm"
+      type="button"
+      variant="ghost"
+    >
+      <ArrowLeft />
+      {showingReturns ? "Outbound flights" : "New search"}
+    </Button>
+
+    <div className="flex flex-wrap items-baseline justify-between gap-2">
+      <h3 className="font-semibold text-lg">
+        {showingReturns ? "Choose your return" : route}
+      </h3>
+      <p className="text-muted-foreground text-sm">
+        {listCount} {countLabel(listCount, showingReturns, isRoundTrip)} · per
+        adult
+      </p>
+    </div>
+
+    {showingReturns && selectedLeg ? (
+      <p className="flex flex-wrap items-center gap-1.5 rounded-xl bg-muted/50 px-3 py-2 text-muted-foreground text-sm">
+        <span className="font-medium text-foreground">Outbound picked</span>
+        <span aria-hidden="true">·</span>
+        {selectedLeg.flightNumbers.join(" · ")}
+        <span aria-hidden="true">·</span>
+        {selectedLeg.departureTime} → {selectedLeg.arrivalTime}
+      </p>
+    ) : null}
+  </div>
+);
+
 export const FareResults = () => {
   const { backToBrowse, isSearching, results } = useFareSearch();
   const [airlineFilter, setAirlineFilter] = useState<string | null>(null);
@@ -594,43 +649,16 @@ export const FareResults = () => {
 
   return (
     <section className="flex flex-col gap-4">
-      {/* One back control the whole way: returns -> outbound list -> browse.
-          Without it a search was a one-way door; the only escape was the reset
-          icon buried in the search card, which also wiped the criteria. */}
-      <div className="flex flex-col gap-2">
-        <Button
-          className="-ml-2 self-start text-muted-foreground"
-          onClick={
-            showingReturns ? () => setSelectedOutbound(null) : backToBrowse
-          }
-          size="sm"
-          type="button"
-          variant="ghost"
-        >
-          <ArrowLeft />
-          {showingReturns ? "Outbound flights" : "New search"}
-        </Button>
+      <ResultsHeader
+        isRoundTrip={isRoundTrip}
+        listCount={listCount}
+        onBack={showingReturns ? () => setSelectedOutbound(null) : backToBrowse}
+        route={results.searchedRoute}
+        selectedLeg={selectedGroup?.leg}
+        showingReturns={showingReturns}
+      />
 
-        <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h3 className="font-semibold text-lg">
-            {showingReturns ? "Choose your return" : results.searchedRoute}
-          </h3>
-          <p className="text-muted-foreground text-sm">
-            {listCount} {countLabel(listCount, showingReturns, isRoundTrip)} ·
-            per adult
-          </p>
-        </div>
-
-        {showingReturns && selectedGroup ? (
-          <p className="flex flex-wrap items-center gap-1.5 rounded-xl bg-muted/50 px-3 py-2 text-muted-foreground text-sm">
-            <span className="font-medium text-foreground">Outbound picked</span>
-            <span aria-hidden="true">·</span>
-            {selectedGroup.leg.flightNumbers.join(" · ")}
-            <span aria-hidden="true">·</span>
-            {selectedGroup.leg.departureTime} → {selectedGroup.leg.arrivalTime}
-          </p>
-        ) : null}
-      </div>
+      {showingReturns ? null : <FlexibleDates />}
 
       {showingReturns ? null : (
         <FilterBar

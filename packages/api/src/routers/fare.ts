@@ -115,6 +115,18 @@ export interface FareSearchOutcome {
   searchId?: string;
 }
 
+export interface NearbyDatePrice {
+  /** `YYYY-MM-DD` the outbound leg departs. */
+  date: string;
+  cheapestTotal?: number;
+  currency?: string;
+  /** False when Atlas returned no fares for that day. */
+  hasFares: boolean;
+  /** True for the date the traveller originally searched. */
+  isCurrent: boolean;
+  returnDate?: string;
+}
+
 interface SearchApiResponse {
   msg?: string | null;
   noResultReason?: unknown;
@@ -134,6 +146,24 @@ const asRecord = (value: unknown): Record<string, unknown> | undefined =>
   typeof value === "object" && value !== null && !Array.isArray(value)
     ? (value as Record<string, unknown>)
     : undefined;
+
+/** The documented `/search.do` body, kept out of the handler for readability. */
+const toSearchBody = (
+  input: SearchInput,
+  departureDate: string,
+  returnDate: string | undefined
+) => ({
+  adultNum: input.adults,
+  cabinClass: input.cabin,
+  childNum: input.children,
+  currency: input.currency,
+  fromCity: input.origin,
+  fromDate: departureDate,
+  infantNum: input.infants,
+  toCity: input.destination,
+  tripType: returnDate === undefined ? "1" : "2",
+  ...(returnDate === undefined ? {} : { retDate: returnDate }),
+});
 
 /**
  * Logs the search criteria and result count. Best-effort: a logging failure
@@ -194,9 +224,14 @@ const emptyOutcome = (rawReason: unknown): FareSearchOutcome => {
   };
 };
 
+/**
+ * @param shouldRecord Set false for exploratory searches that should not
+ * pollute the traveller's history.
+ */
 const runSearch = async (
   userId: string,
-  input: SearchInput
+  input: SearchInput,
+  shouldRecord = true
 ): Promise<FareSearchOutcome> => {
   const atlas = await getAtlasClient();
   const departureDate = toCompactDate(input.departureDate);
@@ -212,18 +247,7 @@ const runSearch = async (
     // reserved for pre-sales benchmarking and must not price this page.
     response = await atlas.client.post<SearchApiResponse>(
       "/search.do",
-      {
-        adultNum: input.adults,
-        cabinClass: input.cabin,
-        childNum: input.children,
-        currency: input.currency,
-        fromCity: input.origin,
-        fromDate: departureDate,
-        infantNum: input.infants,
-        toCity: input.destination,
-        tripType: returnDate === undefined ? "1" : "2",
-        ...(returnDate === undefined ? {} : { retDate: returnDate }),
-      },
+      toSearchBody(input, departureDate, returnDate),
       { timeoutMs: SEARCH_TIMEOUT_MS }
     );
   } catch {
@@ -273,7 +297,9 @@ const runSearch = async (
     ...(returnDate === undefined ? {} : { returnDate }),
   });
 
-  const searchId = await recordSearch(userId, input, fares.length, requestId);
+  const searchId = shouldRecord
+    ? await recordSearch(userId, input, fares.length, requestId)
+    : undefined;
 
   if (fares.length > 0) {
     return {
@@ -288,6 +314,119 @@ const runSearch = async (
     ...(searchId === undefined ? {} : { searchId }),
     ...(requestId === undefined ? {} : { requestId }),
   };
+};
+
+/** ±3 days is a week-wide view: enough to see a pattern, cheap enough to run. */
+const NEARBY_SPREAD = 3;
+const NEARBY_CONCURRENCY = 3;
+const MS_PER_DAY = 86_400_000;
+
+const shiftIsoDate = (value: string, days: number): string => {
+  const shifted = new Date(`${value}T00:00:00Z`);
+  shifted.setUTCDate(shifted.getUTCDate() + days);
+  return shifted.toISOString().slice(0, 10);
+};
+
+const cheapestOf = (fares: NormalizedFare[]) => {
+  let best: NormalizedFare | undefined;
+
+  for (const fare of fares) {
+    if (best === undefined || fare.adultTotal < best.adultTotal) {
+      best = fare;
+    }
+  }
+
+  return best;
+};
+
+/**
+ * Prices the days either side of the chosen departure.
+ *
+ * Dates are the biggest lever on airfare, and a single price answers nothing —
+ * "USD 103" only means something next to its neighbours. Round trips shift both
+ * legs together so the trip length stays what the traveller asked for.
+ *
+ * Costs one Atlas search per day, so this is opt-in rather than automatic, and
+ * these searches are deliberately not written to `fare_search`: they are the
+ * page exploring, not the traveller.
+ */
+const searchNearbyDates = async (
+  userId: string,
+  input: SearchInput
+): Promise<NearbyDatePrice[]> => {
+  const tripLengthDays =
+    input.returnDate === undefined
+      ? undefined
+      : Math.round(
+          (Date.parse(`${input.returnDate}T00:00:00Z`) -
+            Date.parse(`${input.departureDate}T00:00:00Z`)) /
+            MS_PER_DAY
+        );
+
+  const offsets = Array.from(
+    { length: NEARBY_SPREAD * 2 + 1 },
+    (_, index) => index - NEARBY_SPREAD
+  );
+
+  const today = new Date().toISOString().slice(0, 10);
+  const candidates = offsets
+    .map((offset) => shiftIsoDate(input.departureDate, offset))
+    .filter((date) => date >= today);
+
+  const results: NearbyDatePrice[] = [];
+  let cursor = 0;
+
+  const worker = async (): Promise<void> => {
+    while (cursor < candidates.length) {
+      const date = candidates[cursor];
+      cursor += 1;
+
+      if (date === undefined) {
+        return;
+      }
+
+      const returnDate =
+        tripLengthDays === undefined
+          ? undefined
+          : shiftIsoDate(date, tripLengthDays);
+
+      // One bad day must not cost the traveller the other six, so a failed
+      // search is read as "no fares" rather than thrown.
+      // oxlint-disable-next-line eslint/no-await-in-loop
+      const outcome = await runSearch(
+        userId,
+        {
+          ...input,
+          departureDate: date,
+          ...(returnDate === undefined ? {} : { returnDate }),
+        },
+        false
+      ).catch((): FareSearchOutcome => ({ fares: [] }));
+
+      const cheapest = cheapestOf(outcome.fares);
+
+      results.push({
+        date,
+        hasFares: outcome.fares.length > 0,
+        isCurrent: date === input.departureDate,
+        ...(cheapest === undefined
+          ? {}
+          : {
+              cheapestTotal: cheapest.adultTotal,
+              currency: cheapest.currency,
+            }),
+        ...(returnDate === undefined ? {} : { returnDate }),
+      });
+    }
+  };
+
+  await Promise.all(
+    Array.from({ length: Math.min(NEARBY_CONCURRENCY, candidates.length) }, () =>
+      worker()
+    )
+  );
+
+  return results.toSorted((a, b) => a.date.localeCompare(b.date));
 };
 
 const savedFareRouter = router({
@@ -377,6 +516,15 @@ const savedFareRouter = router({
 });
 
 export const fareRouter = router({
+  /**
+   * Prices the days around the chosen departure. Mutation for the same reason
+   * `search` is one: it spends Atlas quota, several searches' worth, and must
+   * only ever run when the traveller asks for it.
+   */
+  nearbyDates: protectedProcedure
+    .input(searchInputSchema)
+    .mutation(({ ctx, input }) => searchNearbyDates(ctx.session.user.id, input)),
+
   /**
    * Routes this traveller actually searched, ranked by how often.
    *
