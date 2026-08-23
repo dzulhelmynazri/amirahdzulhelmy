@@ -33,12 +33,12 @@ const nextConfig: EveNextConfig = {
 
 export default withEve(nextConfig, {
   agents: {
-    "booking-agent": "../booking-agent",
-    "disruption-guard": "../disruption-guard",
-    "flight-guardian": "../flight-guardian",
-    "journey-concierge": "../journey-concierge",
-    "rebook-agent": "../rebook-agent",
-    "routing-agent": "../routing-agent",
-    "travel-sentinel": "../travel-sentinel",
+    "booking-agent": "../../agents/booking-agent",
+    "disruption-guard": "../../agents/disruption-guard",
+    "flight-guardian": "../../agents/flight-guardian",
+    "journey-concierge": "../../agents/journey-concierge",
+    "rebook-agent": "../../agents/rebook-agent",
+    "routing-agent": "../../agents/routing-agent",
+    "travel-sentinel": "../../agents/travel-sentinel",
   },
 });

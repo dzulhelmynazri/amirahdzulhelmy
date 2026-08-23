@@ -7,13 +7,13 @@ EXAMPLE_FILE="$ROOT/.env.example"
 
 APPS=(
   apps/web
-  apps/booking-agent
-  apps/rebook-agent
-  apps/routing-agent
-  apps/disruption-guard
-  apps/journey-concierge
-  apps/flight-guardian
-  apps/travel-sentinel
+  agents/booking-agent
+  agents/rebook-agent
+  agents/routing-agent
+  agents/disruption-guard
+  agents/journey-concierge
+  agents/flight-guardian
+  agents/travel-sentinel
 )
 
 relpath() {
