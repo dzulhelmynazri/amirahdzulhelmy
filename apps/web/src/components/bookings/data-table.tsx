@@ -57,6 +57,7 @@ import {
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
+import { RowActions } from "@/components/bookings/row-actions";
 import {
   getPassengers,
   getSegments,
@@ -89,6 +90,7 @@ const skeletonCellWidths = [
   "w-14",
   "w-20",
   "w-20",
+  "w-28",
 ];
 
 const features = tableFeatures({
@@ -221,6 +223,11 @@ const columns = columnHelper.columns([
     sortFn: (rowA, rowB) =>
       new Date(rowA.original.createdAt).getTime() -
       new Date(rowB.original.createdAt).getTime(),
+  }),
+  columnHelper.display({
+    cell: (info) => <RowActions booking={info.row.original} />,
+    header: () => <div className="text-right">Actions</div>,
+    id: "actions",
   }),
 ]);
 
@@ -375,7 +382,7 @@ export const DataTable = ({
       </div>
 
       <div className="rounded-lg border">
-        <Table className="min-w-200">
+        <Table className="min-w-216">
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>

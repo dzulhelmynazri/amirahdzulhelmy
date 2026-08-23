@@ -77,7 +77,7 @@ const PASSENGER_TYPES: Record<number, "adult" | "child" | "infant"> = {
 };
 
 /** Atlas queryOrder fields this script consumes. */
-interface AtlasOrder {
+export interface AtlasOrder {
   createdTime: string | null;
   currency: string | null;
   orderNo: string;
@@ -152,7 +152,7 @@ const toPayload = (order: AtlasOrder): Record<string, unknown> => ({
   totalPrice: String(order.totalPrice ?? ""),
 });
 
-const upsertBooking = async (order: AtlasOrder, userId: string) => {
+export const upsertBooking = async (order: AtlasOrder, userId: string) => {
   const fields = {
     currency: order.currency,
     payload: toPayload(order),
@@ -174,10 +174,11 @@ const upsertBooking = async (order: AtlasOrder, userId: string) => {
     });
 };
 
-/** Books one route end-to-end: search -> verify -> create -> pay -> queryOrder. */
-const bookRoute = async (
+/** Books one route end-to-end: search -> verify -> create -> [pay] -> queryOrder. */
+export const bookRoute = async (
   atlas: AtlasClient,
-  route: { daysAhead: number; from: string; to: string }
+  route: { daysAhead: number; from: string; to: string },
+  { pay = true }: { pay?: boolean } = {}
 ): Promise<AtlasOrder | null> => {
   const fromDate = dayOffset(route.daysAhead);
   try {
@@ -221,11 +222,19 @@ const bookRoute = async (
       return null;
     }
 
-    const pay = await atlas.flights.paymentAndTicketing.pay({ orderNo });
-    const { status: payStatus } = pay as { status?: number };
-    console.log(
-      `Booked ${route.from}->${route.to} on ${fromDate}: ${orderNo} (pay status ${payStatus})`
-    );
+    if (pay) {
+      const payResult = await atlas.flights.paymentAndTicketing.pay({
+        orderNo,
+      });
+      const { status: payStatus } = payResult as { status?: number };
+      console.log(
+        `Booked ${route.from}->${route.to} on ${fromDate}: ${orderNo} (pay status ${payStatus})`
+      );
+    } else {
+      console.log(
+        `Created unpaid order ${route.from}->${route.to} on ${fromDate}: ${orderNo}`
+      );
+    }
 
     const live = await atlas.flights.queryOrder.query({ orderNo });
     return live as unknown as AtlasOrder;
@@ -297,4 +306,10 @@ const main = async () => {
   );
 };
 
-await main();
+// Only run when executed directly; other scripts import bookRoute/upsertBooking.
+const isDirectRun =
+  process.argv[1]?.endsWith("seed-atlas-bookings.ts") ?? false;
+
+if (isDirectRun) {
+  await main();
+}

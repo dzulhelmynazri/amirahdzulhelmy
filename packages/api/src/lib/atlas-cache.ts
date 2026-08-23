@@ -15,6 +15,16 @@ interface LiveCacheEntry {
 const liveCache = new Map<string, LiveCacheEntry>();
 const inflight = new Map<string, Promise<unknown>>();
 
+/** Drops cached lookups for one order after a lifecycle change (pay/void/refund). */
+export const invalidateAtlasOrder = (orderNo: string): void => {
+  const suffix = `:${orderNo}`;
+  for (const key of liveCache.keys()) {
+    if (key.endsWith(suffix)) {
+      liveCache.delete(key);
+    }
+  }
+};
+
 export const cachedAtlas = <T>(
   key: string,
   load: () => Promise<T>
