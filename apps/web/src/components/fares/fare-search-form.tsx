@@ -1,5 +1,3 @@
-"use client";
-
 import { Button } from "@atlas/ui/components/button";
 import { Calendar } from "@atlas/ui/components/calendar";
 import {
@@ -122,14 +120,7 @@ const AirportPicker = ({
     value={value}
   >
     <ComboboxTrigger
-      render={
-        <Button
-          aria-label={label}
-          className="shrink-0 rounded-full px-3"
-          type="button"
-          variant="outline"
-        />
-      }
+      render={<Button aria-label={label} type="button" variant="outline" />}
     >
       {value ? (
         <>
@@ -507,7 +498,7 @@ export const FareSearchForm = ({ onSearched }: { onSearched?: () => void }) => {
         </div>
 
         <Button
-          className="mt-3 h-12 w-full rounded-2xl text-base"
+          className="mt-3 h-12 w-full"
           disabled={!canSearch || isSearching}
           type="submit"
         >

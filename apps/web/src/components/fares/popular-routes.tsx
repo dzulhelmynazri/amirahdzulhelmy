@@ -39,7 +39,6 @@ const AgentPrompt = () => {
         </div>
       </div>
       <Button
-        className="shrink-0 rounded-full"
         onClick={() =>
           handOffToAgent(
             "I'm flexible on dates. Help me find a good-value trip — ask me what I need and search a few options."
@@ -63,8 +62,7 @@ const AgentPrompt = () => {
  */
 export const PopularRoutes = () => {
   const { runSearch, update } = useFareSearch();
-  const popular = useQuery(trpc.fare.popular.queryOptions());
-  const routes = popular.data;
+  const { data: routes } = useQuery(trpc.fare.popular.queryOptions());
 
   const handlePick = (route: NonNullable<typeof routes>[number]) => {
     const origin = airportByCode.get(route.origin) ?? null;
