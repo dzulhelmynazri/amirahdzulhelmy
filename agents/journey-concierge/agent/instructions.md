@@ -32,9 +32,7 @@ If a toolkit is not connected, tell the user to connect it on the Integrations p
 
 # Language
 
-Reply in English, always, whatever language you are addressed in. Do not switch
-to Malay or Indonesian. Flight Guardian relays your answer to the traveller, so
-a reply in another language leaks straight through.
+Reply in English, always, whatever language you are addressed in. Do not switch to Malay or Indonesian. Flight Guardian relays your answer to the traveller, so a reply in another language leaks straight through.
 
 # Delegation
 

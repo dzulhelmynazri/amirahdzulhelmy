@@ -19,6 +19,7 @@ import {
 } from "@atlas/ui/components/sheet";
 import { Skeleton } from "@atlas/ui/components/skeleton";
 import { cn } from "@atlas/ui/lib/utils";
+import { formatShortDate } from "@atlas/utils/date";
 import { Bookmark, Luggage, Trash2 } from "lucide-react";
 import { useTransition } from "react";
 import { toast } from "sonner";
@@ -30,11 +31,6 @@ import type { SavedFareRow } from "./use-fare-search";
 import { useFareSearch } from "./use-fare-search";
 
 const SKELETON_ROWS = ["a", "b", "c"];
-
-const savedAtFormatter = new Intl.DateTimeFormat("en-US", {
-  day: "numeric",
-  month: "short",
-});
 
 const airlineName = (code: string) => airlines[code]?.name ?? code;
 
@@ -120,7 +116,7 @@ const SavedRow = ({
             {fare.currency} {Number(fare.priceAtSave).toFixed(2)}
           </span>
           <span className="block text-muted-foreground text-[11px]">
-            saved {savedAtFormatter.format(fare.createdAt)}
+            saved {formatShortDate(fare.createdAt)}
           </span>
         </span>
       </div>
