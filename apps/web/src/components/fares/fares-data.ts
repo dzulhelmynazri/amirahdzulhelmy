@@ -227,6 +227,13 @@ export interface FareDeal {
 
 export const fareCurrency = "MYR";
 
+/**
+ * Settlement currency sent to Atlas. This must match the currency configured on
+ * the Atlas account — anything else comes back as status 124 "Currency not
+ * supported for settlement". The sandbox account settles in USD.
+ */
+export const displayCurrency = "USD";
+
 /** Origins offered as quick filters above the deal cards. */
 export const dealOriginCodes = ["KUL", "PEN", "BKI", "KCH"] as const;
 

@@ -21,11 +21,17 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@atlas/ui/components/popover";
+import { Spinner } from "@atlas/ui/components/spinner";
 import { cn } from "@atlas/ui/lib/utils";
 import * as countryFlags from "country-flag-icons/react/3x2";
-import { ArrowUpDown, CalendarDays, RotateCcw } from "lucide-react";
+import {
+  ArrowUpDown,
+  CalendarDays,
+  Plus,
+  RotateCcw,
+  Search,
+} from "lucide-react";
 import type { FormEvent, ReactNode } from "react";
-import { toast } from "sonner";
 
 import {
   airportLabel,
@@ -58,6 +64,28 @@ const passengerOptions = Array.from(
 /** Strips the select chrome so the summary rows read as plain key/value text. */
 const inlineSelectClass =
   "[&>select]:border-transparent [&>select]:bg-transparent [&>select]:font-medium [&>select]:shadow-none dark:[&>select]:bg-transparent";
+
+/** "departure date", "origin and destination", "origin, a date and a return". */
+const listMissing = (fields: string[]): string => {
+  if (fields.length === 1) {
+    return fields[0] ?? "";
+  }
+  const head = fields.slice(0, -1).join(", ");
+  return `${head} and ${fields.at(-1)}`;
+};
+
+const searchLabel = (
+  origin: Airport | null,
+  destination: Airport | null,
+  isSearching: boolean
+) => {
+  if (isSearching) {
+    return "Searching Atlas…";
+  }
+  return origin && destination
+    ? `Search ${origin.code} → ${destination.code}`
+    : "Search fares";
+};
 
 const startOfToday = () => {
   const now = new Date();
@@ -136,13 +164,17 @@ const AirportPicker = ({
 );
 
 const DatePicker = ({
+  align,
   disabledBefore,
+  hint,
   label,
   onSelect,
   placeholder,
   value,
 }: {
+  align: "end" | "start";
   disabledBefore: Date;
+  hint: string;
   label: string;
   onSelect: (date: Date | undefined) => void;
   placeholder: string;
@@ -153,18 +185,26 @@ const DatePicker = ({
       render={
         <Button
           aria-label={label}
-          className="-mr-1.5 h-7 gap-1.5 font-normal"
+          className="h-auto flex-1 flex-col items-start gap-0.5 rounded-xl px-3 py-2.5 font-normal"
           type="button"
           variant="ghost"
         />
       }
     >
-      <CalendarDays className="text-muted-foreground" />
-      <span className={cn(!value && "text-muted-foreground")}>
+      <span className="text-muted-foreground text-xs uppercase tracking-wide">
+        {hint}
+      </span>
+      <span
+        className={cn(
+          "flex items-center gap-1.5 font-medium",
+          !value && "font-normal text-muted-foreground"
+        )}
+      >
+        <CalendarDays className="size-3.5 text-muted-foreground" />
         {value ? dateFormatter.format(value) : placeholder}
       </span>
     </PopoverTrigger>
-    <PopoverContent align="end" className="w-auto p-0">
+    <PopoverContent align={align} className="w-auto p-0">
       <Calendar
         autoFocus
         disabled={{ before: disabledBefore }}
@@ -176,28 +216,90 @@ const DatePicker = ({
   </Popover>
 );
 
+/**
+ * Dates are a property of the trip, not of the destination. They get their own
+ * band below both place panels rather than sitting inside them, and the nights
+ * count lives here too instead of as a dangling summary row.
+ */
+const DatesPanel = ({
+  departure,
+  isRoundTrip,
+  nights,
+  onAddReturn,
+  onDepartureSelect,
+  onReturnSelect,
+  returnDate,
+  today,
+}: {
+  departure: Date | undefined;
+  isRoundTrip: boolean;
+  nights: number | null;
+  onAddReturn: () => void;
+  onDepartureSelect: (date: Date | undefined) => void;
+  onReturnSelect: (date: Date | undefined) => void;
+  returnDate: Date | undefined;
+  today: Date;
+}) => (
+  <div className="mt-2 flex items-stretch gap-1 rounded-2xl bg-muted/50 p-1.5">
+    <DatePicker
+      align="start"
+      disabledBefore={today}
+      hint="Depart"
+      label="Departure date"
+      onSelect={onDepartureSelect}
+      placeholder="Add date"
+      value={departure}
+    />
+
+    <div aria-hidden="true" className="my-2 w-px shrink-0 bg-border" />
+
+    {isRoundTrip ? (
+      <DatePicker
+        align="end"
+        disabledBefore={departure ?? today}
+        hint="Return"
+        label="Return date"
+        onSelect={onReturnSelect}
+        placeholder="Add date"
+        value={returnDate}
+      />
+    ) : (
+      <Button
+        className="h-auto flex-1 flex-col items-start gap-0.5 rounded-xl px-3 py-2.5 font-normal"
+        onClick={onAddReturn}
+        type="button"
+        variant="ghost"
+      >
+        <span className="text-muted-foreground text-xs uppercase tracking-wide">
+          Return
+        </span>
+        <span className="flex items-center gap-1.5 text-muted-foreground">
+          <Plus className="size-3.5" />
+          Add return
+        </span>
+      </Button>
+    )}
+
+    {nights === null ? null : (
+      <span className="self-center whitespace-nowrap px-3 text-muted-foreground text-sm">
+        {nights} night{nights === 1 ? "" : "s"}
+      </span>
+    )}
+  </div>
+);
+
 const AirportPanel = ({
   airport,
-  date,
-  dateDisabledBefore,
-  dateLabel,
-  datePlaceholder,
+  emptyLabel,
   label,
   onAirportChange,
-  onDateSelect,
   pickerLabel,
-  showDate,
 }: {
   airport: Airport | null;
-  date: Date | undefined;
-  dateDisabledBefore: Date;
-  dateLabel: string;
-  datePlaceholder: string;
+  emptyLabel: string;
   label: string;
   onAirportChange: (airport: Airport | null) => void;
-  onDateSelect: (date: Date | undefined) => void;
   pickerLabel: string;
-  showDate: boolean;
 }) => (
   <div className="rounded-2xl bg-muted/50 px-4 py-3.5">
     <p className="text-muted-foreground text-xs uppercase tracking-wide">
@@ -207,10 +309,10 @@ const AirportPanel = ({
       <span
         className={cn(
           "truncate font-semibold text-2xl",
-          !airport && "text-muted-foreground"
+          !airport && "font-normal text-muted-foreground"
         )}
       >
-        {airport ? airport.city : "Anywhere"}
+        {airport ? airport.city : emptyLabel}
       </span>
       <AirportPicker
         label={pickerLabel}
@@ -218,18 +320,9 @@ const AirportPanel = ({
         value={airport}
       />
     </div>
-    <div className="mt-1 flex items-center justify-between gap-3 text-muted-foreground text-sm">
-      <span className="truncate">{airport ? airport.name : "Not set"}</span>
-      {showDate ? (
-        <DatePicker
-          disabledBefore={dateDisabledBefore}
-          label={dateLabel}
-          onSelect={onDateSelect}
-          placeholder={datePlaceholder}
-          value={date}
-        />
-      ) : null}
-    </div>
+    <p className="mt-0.5 h-5 truncate text-muted-foreground text-sm">
+      {airport?.name ?? ""}
+    </p>
   </div>
 );
 
@@ -246,8 +339,16 @@ const SummaryRow = ({
   </div>
 );
 
-export const FareSearchForm = () => {
-  const { reset, search, swapAirports, update } = useFareSearch();
+export const FareSearchForm = ({ onSearched }: { onSearched?: () => void }) => {
+  const {
+    blockingFields,
+    isSearching,
+    reset,
+    runSearch,
+    search,
+    swapAirports,
+    update,
+  } = useFareSearch();
   const {
     cabin,
     departure,
@@ -286,18 +387,8 @@ export const FareSearchForm = () => {
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-
-    if (!(origin && destination && departure)) {
-      return;
-    }
-
-    const dates = returnDate
-      ? `${dateFormatter.format(departure)} – ${dateFormatter.format(returnDate)}`
-      : dateFormatter.format(departure);
-
-    toast.info(`${origin.code} → ${destination.code}`, {
-      description: `${dates} · ${passengers} traveller${passengers > 1 ? "s" : ""} · ${cabinLabels[cabin]}`,
-    });
+    runSearch();
+    onSearched?.();
   };
 
   return (
@@ -318,15 +409,10 @@ export const FareSearchForm = () => {
 
         <AirportPanel
           airport={origin}
-          date={departure}
-          dateDisabledBefore={today}
-          dateLabel="Departure date"
-          datePlaceholder="Departure"
+          emptyLabel="Choose origin"
           label="From"
           onAirportChange={(airport) => update({ origin: airport })}
-          onDateSelect={handleDepartureSelect}
           pickerLabel="Select origin airport"
-          showDate
         />
 
         <div className="-my-3 relative z-10 flex justify-center">
@@ -344,15 +430,21 @@ export const FareSearchForm = () => {
 
         <AirportPanel
           airport={destination}
-          date={returnDate}
-          dateDisabledBefore={departure ?? today}
-          dateLabel="Return date"
-          datePlaceholder="Return"
+          emptyLabel="Choose destination"
           label="To"
           onAirportChange={(airport) => update({ destination: airport })}
-          onDateSelect={(date) => update({ returnDate: date })}
           pickerLabel="Select destination airport"
-          showDate={isRoundTrip}
+        />
+
+        <DatesPanel
+          departure={departure}
+          isRoundTrip={isRoundTrip}
+          nights={nights}
+          onAddReturn={() => handleTripTypeChange("round-trip")}
+          onDepartureSelect={handleDepartureSelect}
+          onReturnSelect={(date) => update({ returnDate: date })}
+          returnDate={returnDate}
+          today={today}
         />
 
         <div className="mt-3 flex flex-col px-3">
@@ -412,25 +504,22 @@ export const FareSearchForm = () => {
               ))}
             </NativeSelect>
           </SummaryRow>
-
-          <SummaryRow label="Length">
-            <span className="pr-2.5 font-medium">
-              {nights === null
-                ? "—"
-                : `${nights} night${nights === 1 ? "" : "s"}`}
-            </span>
-          </SummaryRow>
         </div>
 
         <Button
           className="mt-3 h-12 w-full rounded-2xl text-base"
-          disabled={!canSearch}
+          disabled={!canSearch || isSearching}
           type="submit"
         >
-          {origin && destination
-            ? `Explore ${origin.code} → ${destination.code}`
-            : "Explore fares"}
+          {isSearching ? <Spinner /> : <Search />}
+          {searchLabel(origin, destination, isSearching)}
         </Button>
+
+        {blockingFields.length > 0 && !isSearching ? (
+          <p className="mt-2 text-center text-muted-foreground text-sm">
+            Add a {listMissing(blockingFields)} to search.
+          </p>
+        ) : null}
       </div>
     </form>
   );

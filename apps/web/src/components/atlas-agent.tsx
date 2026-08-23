@@ -383,15 +383,28 @@ const AgentMessages = ({
 };
 
 const AgentComposer = ({
+  draft,
   isEmpty,
   isFullWidth,
   onSubmit,
 }: {
+  draft: string;
   isEmpty: boolean;
   isFullWidth: boolean;
   onSubmit: (text: string) => void;
 }) => {
   const [value, setValue] = useState("");
+  const [lastDraft, setLastDraft] = useState(draft);
+
+  // Adjusting state during render is React's own pattern for deriving from a
+  // changed prop — cheaper and less surprising than an effect that fires after
+  // the panel has already painted an empty box.
+  if (draft !== lastDraft) {
+    setLastDraft(draft);
+    if (draft !== "") {
+      setValue(draft);
+    }
+  }
 
   const handleSubmit = useCallback(
     (text: string) => {
@@ -441,18 +454,29 @@ const AgentComposer = ({
 };
 
 export const AtlasAgent = () => {
-  const { isOpen, isFullWidth, closeAgent, mounted, toggleAgent } =
-    useAgentSidebarSync();
+  const {
+    isOpen,
+    isFullWidth,
+    closeAgent,
+    draft,
+    mounted,
+    setDraft,
+    toggleAgent,
+  } = useAgentSidebarSync();
 
   const [messages, setMessages] = useState<ChatMessage[]>(INITIAL_MESSAGES);
 
-  const handleSubmit = useCallback((text: string) => {
-    setMessages((prev) => [
-      ...prev,
-      { content: text, from: "user", id: `user-${Date.now()}` },
-    ]);
-    // Placeholder — wire to agent backend to produce a response
-  }, []);
+  const handleSubmit = useCallback(
+    (text: string) => {
+      setMessages((prev) => [
+        ...prev,
+        { content: text, from: "user", id: `user-${Date.now()}` },
+      ]);
+      setDraft("");
+      // Placeholder — wire to agent backend to produce a response
+    },
+    [setDraft]
+  );
 
   return (
     <aside
@@ -491,6 +515,7 @@ export const AtlasAgent = () => {
           <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col overflow-hidden">
             <AgentMessages isTyping={false} messages={messages} />
             <AgentComposer
+              draft={draft}
               isEmpty={messages.length === 0}
               isFullWidth={isFullWidth}
               onSubmit={handleSubmit}

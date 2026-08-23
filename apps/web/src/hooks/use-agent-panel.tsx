@@ -18,6 +18,13 @@ import type { ReactNode } from "react";
  * localStorage so it survives navigation.
  */
 interface AgentPanelContextValue {
+  /**
+   * Text staged into the composer by another surface. The fares page uses it
+   * to hand a chosen flight to the agent with every id and date already in the
+   * message, so the traveller does not retype what they just picked.
+   */
+  draft: string;
+  setDraft: (text: string) => void;
   isOpen: boolean;
   isFullWidth: boolean;
   mounted: boolean;
@@ -65,6 +72,7 @@ const AgentPanelContext = createContext<AgentPanelContextValue | null>(null);
 
 export const AgentPanelProvider = ({ children }: { children: ReactNode }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [draft, setDraft] = useState("");
   const [isFullWidth, setIsFullWidth] = useState(false);
   const [mounted, setMounted] = useState(false);
 
@@ -124,16 +132,19 @@ export const AgentPanelProvider = ({ children }: { children: ReactNode }) => {
   const value = useMemo<AgentPanelContextValue>(
     () => ({
       close,
+      draft,
       getSidebarStateBeforeOpen,
       isFullWidth,
       isOpen,
       mounted,
       open,
+      setDraft,
       setSidebarStateBeforeOpen,
       toggle,
     }),
     [
       close,
+      draft,
       getSidebarStateBeforeOpen,
       isFullWidth,
       isOpen,
@@ -168,6 +179,8 @@ export const useAgentSidebarSync = () => {
     mounted,
     open,
     close,
+    draft,
+    setDraft,
     getSidebarStateBeforeOpen,
     setSidebarStateBeforeOpen,
   } = useAgentPanel();
@@ -220,12 +233,24 @@ export const useAgentSidebarSync = () => {
     [isOpen, isFullWidth, closeAgent, openAgent]
   );
 
+  /** Opens the panel with the composer already filled in. */
+  const handOffToAgent = useCallback(
+    (text: string) => {
+      setDraft(text);
+      openAgent(false);
+    },
+    [openAgent, setDraft]
+  );
+
   return {
     closeAgent,
+    draft,
+    handOffToAgent,
     isFullWidth,
     isOpen,
     mounted,
     openAgent,
+    setDraft,
     toggleAgent,
   };
 };

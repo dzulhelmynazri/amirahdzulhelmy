@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@atlas/api": "workspace:*",
+    "@atlas/atlas-client": "workspace:*",
     "@atlas/auth": "workspace:*",
     "@atlas/db": "workspace:*",
     "@atlas/env": "workspace:*",
