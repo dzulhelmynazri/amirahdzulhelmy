@@ -3,4 +3,5 @@ export * from "./activity";
 export * from "./auth";
 export * from "./booking";
 export * from "./fares";
+export * from "./travellers";
 export * from "./trips";

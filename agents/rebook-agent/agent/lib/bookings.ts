@@ -28,7 +28,7 @@ const firstString = (
 };
 
 const extractPnr = (record: Record<string, unknown>): string | null => {
-  const direct = firstString(record, ["pnr", "PNR"]);
+  const direct = firstString(record, ["pnr", "PNR", "pnrCode"]);
   if (direct) {
     return direct;
   }
@@ -72,23 +72,45 @@ const extractEvent = (
   };
 };
 
+/**
+ * Works out whose booking this is.
+ *
+ * In the browser better-auth supplies a real user id. `eve dev` has no cookie,
+ * so the session falls back to `local-dev` with nobody attached — and a booking
+ * saved with a null `userId` never appears on the bookings page, which reads as
+ * the booking having failed when it actually succeeded.
+ *
+ * `ATLAS_DEV_USER_ID` covers that case only. It has to be set by hand in a
+ * local `.env` and is never consulted when a verified user is present, so it
+ * cannot widen attribution in production.
+ */
 const resolveAttribution = (
   context: ToolContext
 ): { principalId: string | null; userId: string | null } => {
   const auth = context.session.auth.current ?? context.session.auth.initiator;
-  if (!auth) {
-    return { principalId: null, userId: null };
+  const isBetterAuthUser = auth?.authenticator.toLowerCase().includes("better");
+
+  if (isBetterAuthUser && auth) {
+    return { principalId: auth.principalId, userId: auth.principalId };
   }
-  const isBetterAuthUser = auth.authenticator.toLowerCase().includes("better");
+
   return {
-    principalId: auth.principalId,
-    userId: isBetterAuthUser ? auth.principalId : null,
+    principalId: auth?.principalId ?? null,
+    userId: process.env.ATLAS_DEV_USER_ID ?? null,
   };
 };
 
+/**
+ * Writes what a tool learned about an order.
+ *
+ * `status` may be null, meaning "do not touch the stored status". Read-only
+ * lookups use that: `queryOrderDetails` returns a numeric `orderStatus` whose
+ * enum is undocumented, and guessing it could downgrade an issued booking. The
+ * snapshot, PNR and totals are still worth keeping.
+ */
 export const persistBooking = async (
   context: ToolContext,
-  status: string,
+  status: string | null,
   result: unknown,
   fallbackOrderNo?: string
 ): Promise<void> => {
@@ -124,9 +146,13 @@ export const persistBooking = async (
 
     await db
       .insert(booking)
-      .values({ ...fields, orderNo, status })
+      .values({ ...fields, orderNo, status: status ?? "created" })
       .onConflictDoUpdate({
-        set: { ...fields, status, updatedAt: new Date() },
+        set: {
+          ...fields,
+          updatedAt: new Date(),
+          ...(status === null ? {} : { status }),
+        },
         target: booking.orderNo,
       });
   } catch {

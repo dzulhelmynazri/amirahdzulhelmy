@@ -9,6 +9,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@atlas/ui/components/dropdown-menu";
 import {
@@ -18,7 +19,8 @@ import {
   useSidebar,
 } from "@atlas/ui/components/sidebar";
 import { Skeleton } from "@atlas/ui/components/skeleton";
-import { ChevronsUpDown, LogOut } from "lucide-react";
+import { ChevronsUpDown, LogOut, UserRound } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { authClient } from "@/lib/auth-client";
@@ -88,6 +90,11 @@ export const NavUser = () => {
             align="end"
             sideOffset={4}
           >
+            <DropdownMenuItem render={<Link href="/profile" />}>
+              <UserRound />
+              Profile
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
             <DropdownMenuItem
               onClick={async () => {
                 await authClient.signOut({

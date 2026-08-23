@@ -69,6 +69,11 @@ const isString = (value: unknown): value is string =>
   typeof value === "string" && value.length > 0;
 
 const toAirport = (value: unknown): BookingAirport | null => {
+  // A routing gives the bare IATA code; an order gives an object with city
+  // and country alongside it.
+  if (isString(value)) {
+    return { city: value, code: value, country: "" };
+  }
   if (!isRecord(value)) {
     return null;
   }
@@ -83,6 +88,75 @@ const toAirport = (value: unknown): BookingAirport | null => {
   };
 };
 
+/**
+ * Atlas timestamps in a routing are `YYYYMMDDHHMM` with no separators.
+ * Rendered raw they read as a serial number, so they become ISO here.
+ */
+const toIsoTime = (value: unknown): string => {
+  if (!(isString(value) && value.length >= 12)) {
+    return isString(value) ? value : "";
+  }
+  const [y, m, d, h, min] = [
+    value.slice(0, 4),
+    value.slice(4, 6),
+    value.slice(6, 8),
+    value.slice(8, 10),
+    value.slice(10, 12),
+  ];
+  return `${y}-${m}-${d}T${h}:${min}`;
+};
+
+/**
+ * The segments of an order, whichever shape the snapshot happens to be in.
+ *
+ * Two shapes reach this function. `create-order` answers with a flat
+ * `segments` array; `query-order` answers with the full routing, where the
+ * legs live under `fromSegments` and `retSegments` and the airport is a bare
+ * code rather than an object. Whichever tool wrote last owns the payload, so
+ * reading only one shape leaves the panel blank for no visible reason.
+ */
+const readRoutingSegments = (payload: Record<string, unknown>) => {
+  const { routing } = payload;
+
+  if (!isRecord(routing)) {
+    return [];
+  }
+
+  const legs = [routing.fromSegments, routing.retSegments]
+    .filter(Array.isArray)
+    .flat();
+  const result: BookingSegment[] = [];
+
+  for (const entry of legs) {
+    if (!isRecord(entry)) {
+      continue;
+    }
+    const origin = toAirport(entry.depAirport);
+    const destination = toAirport(entry.arrAirport);
+
+    if (!(origin && destination)) {
+      continue;
+    }
+
+    const carrier = isString(entry.carrier) ? entry.carrier : "";
+    const number = isString(entry.flightNumber)
+      ? entry.flightNumber
+      : String(entry.flightNumber ?? "");
+
+    result.push({
+      airline: carrier || "Unknown airline",
+      arrival: toIsoTime(entry.arrTime),
+      departure: toIsoTime(entry.depTime),
+      destination,
+      // `carrier` and `flightNumber` are stored apart: AK, then 701.
+      flightNumber: number.startsWith(carrier) ? number : `${carrier}${number}`,
+      origin,
+    });
+  }
+
+  return result;
+};
+
 /** Best-effort extraction of flight segments from an Atlas order payload. */
 export const getSegments = (payload: Record<string, unknown> | null) => {
   if (!payload) {
@@ -90,7 +164,7 @@ export const getSegments = (payload: Record<string, unknown> | null) => {
   }
   const { segments } = payload;
   if (!Array.isArray(segments)) {
-    return [];
+    return readRoutingSegments(payload);
   }
   const result: BookingSegment[] = [];
   for (const entry of segments) {
@@ -111,6 +185,42 @@ export const getSegments = (payload: Record<string, unknown> | null) => {
       origin,
     });
   }
+  return result.length > 0 ? result : readRoutingSegments(payload);
+};
+
+/**
+ * Passengers as `query-order` reports them, under `paxTicketInfos`.
+ *
+ * `passengerType` is numeric here — the same 0/1/2 the booking tools send —
+ * while the create-order shape uses words. Both are accepted.
+ */
+const readTicketedPassengers = (payload: Record<string, unknown>) => {
+  const { paxTicketInfos } = payload;
+
+  if (!Array.isArray(paxTicketInfos)) {
+    return [];
+  }
+
+  const byCode: Record<string, PassengerType> = {
+    0: "adult",
+    1: "child",
+    2: "infant",
+    adult: "adult",
+    child: "child",
+    infant: "infant",
+  };
+  const result: BookingPassenger[] = [];
+
+  for (const entry of paxTicketInfos) {
+    if (!(isRecord(entry) && isString(entry.name))) {
+      continue;
+    }
+    result.push({
+      name: entry.name,
+      type: byCode[String(entry.passengerType).trim().toLowerCase()] ?? "adult",
+    });
+  }
+
   return result;
 };
 
@@ -121,7 +231,7 @@ export const getPassengers = (payload: Record<string, unknown> | null) => {
   }
   const { passengers } = payload;
   if (!Array.isArray(passengers)) {
-    return [];
+    return readTicketedPassengers(payload);
   }
   const result: BookingPassenger[] = [];
   for (const entry of passengers) {
@@ -136,7 +246,7 @@ export const getPassengers = (payload: Record<string, unknown> | null) => {
       type === "child" || type === "infant" ? type : "adult";
     result.push({ name, type: passengerType });
   }
-  return result;
+  return result.length > 0 ? result : readTicketedPassengers(payload);
 };
 
 export const statusLabels: Record<BookingStatus, string> = {
