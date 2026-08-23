@@ -1,14 +1,70 @@
+import { normalizeRoutings } from "@atlas/atlas-client/fare-compare/normalize";
 import { defineTool } from "eve/tools";
 import { z } from "zod";
 
 import { getAtlasClient } from "../lib/atlas";
+
+/**
+ * Atlas returns every outbound x inbound combination as its own routing, so an
+ * 11-flight day against 10 returns arrives as 100 near-identical entries, each
+ * carrying full segment, rule, ancillary and payment payloads. Handed to the
+ * model raw that was ~548K input tokens to summarise five flights.
+ *
+ * Normalising and capping keeps every field the agent actually needs — times,
+ * price, baggage and the `routingIdentifier` required to book — while cutting
+ * the context by orders of magnitude.
+ */
+const MAX_FARES_RETURNED = 20;
 
 export default defineTool({
   description:
     "Search flights on the Atlas booking API. Returns available routings with fares for the given route, dates, and passenger counts.",
   async execute(input) {
     const client = await getAtlasClient();
-    return client.flights.search.search(input);
+    const response = await client.flights.search.search(input);
+
+    if (response.status !== 0) {
+      return { msg: response.msg, status: response.status };
+    }
+
+    const fares = normalizeRoutings(response.routings, {
+      airlines: input.airlines ?? [],
+      departureDate: input.fromDate,
+      destination: input.toCity,
+      id: `${input.fromCity}-${input.toCity}`,
+      origin: input.fromCity,
+      passengers: {
+        adults: input.adultNum,
+        children: input.childNum,
+        infants: input.infantNum,
+      },
+      ...(input.retDate === undefined ? {} : { returnDate: input.retDate }),
+      ...(input.currency ? { currency: input.currency } : {}),
+    });
+
+    // `toSorted` is not in this agent's lib target; the copy above keeps the
+    // sort non-mutating anyway.
+    // oxlint-disable-next-line unicorn/no-array-sort
+    const cheapestFirst = [...fares].sort(
+      (a, b) => a.adultTotal - b.adultTotal
+    );
+
+    return {
+      fares: cheapestFirst.slice(0, MAX_FARES_RETURNED).map((fare) => ({
+        adultTotal: fare.adultTotal,
+        airline: fare.airline,
+        baggage: fare.baggage.description,
+        cabin: fare.cabin,
+        currency: fare.currency,
+        // Opaque token the downstream verify/order tools require.
+        outbound: fare.outbound,
+        routingIdentifier: fare.routingIdentifier,
+        sellable: fare.sellable,
+        ...(fare.inbound === undefined ? {} : { inbound: fare.inbound }),
+      })),
+      returned: Math.min(cheapestFirst.length, MAX_FARES_RETURNED),
+      totalFound: fares.length,
+    };
   },
   inputSchema: z.object({
     adultNum: z
