@@ -24,7 +24,9 @@
   },
   "devDependencies": {
     "@atlas/config": "workspace:*",
+    "@types/ws": "^8.18.1",
     "drizzle-kit": "^0.31.10",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "ws": "^8.21.3"
   }
 }
