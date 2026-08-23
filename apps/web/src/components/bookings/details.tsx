@@ -23,15 +23,21 @@ import * as countryFlags from "country-flag-icons/react/3x2";
 import { ArrowDown, ArrowRight } from "lucide-react";
 import { Fragment } from "react";
 
+import { CopyPnrButton } from "@/components/bookings/copy-pnr";
 import {
+  getBaggage,
   getPassengers,
+  getPnr,
+  getSeats,
   getSegments,
   getTicketNumbers,
   statusLabels,
 } from "@/types/bookings";
 import type {
   Booking,
+  BookingBaggage,
   BookingPassenger,
+  BookingSeat,
   BookingSegment,
 } from "@/types/bookings";
 
@@ -173,9 +179,11 @@ const PassengersCard = ({ passengers }: { passengers: BookingPassenger[] }) => (
 
 const TicketingCard = ({
   booking,
+  pnr,
   ticketNumbers,
 }: {
   booking: Booking;
+  pnr: string | null;
   ticketNumbers: string[];
 }) => (
   <Card>
@@ -183,10 +191,13 @@ const TicketingCard = ({
       <CardTitle>Ticketing</CardTitle>
     </CardHeader>
     <CardContent className="flex flex-col gap-3 text-sm">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2">
         <span className="text-muted-foreground">PNR</span>
-        {booking.pnr ? (
-          <span className="font-mono">{booking.pnr}</span>
+        {pnr ? (
+          <span className="inline-flex items-center gap-0.5 font-mono">
+            {pnr}
+            <CopyPnrButton pnr={pnr} />
+          </span>
         ) : (
           <Dash />
         )}
@@ -215,6 +226,83 @@ const TicketingCard = ({
   </Card>
 );
 
+const seatDetail = (seat: BookingSeat): string => {
+  if (seat.flightNumber) {
+    return `${seat.passenger} · ${seat.flightNumber}`;
+  }
+  return seat.passenger;
+};
+
+const baggageDetail = (bag: BookingBaggage): string => {
+  if (bag.flightNumber && bag.source === "purchased") {
+    return `${bag.passenger} · ${bag.flightNumber}`;
+  }
+  return bag.passenger;
+};
+
+const AncillariesCard = ({
+  baggage,
+  seats,
+}: {
+  baggage: BookingBaggage[];
+  seats: BookingSeat[];
+}) => {
+  const extraBags = baggage.filter((bag) => bag.source === "purchased");
+  const includedBags = baggage.filter((bag) => bag.source === "included");
+  const summaryParts: string[] = [];
+  if (seats.length > 0) {
+    summaryParts.push(
+      `${seats.length} ${seats.length === 1 ? "seat" : "seats"}`
+    );
+  }
+  if (extraBags.length > 0) {
+    summaryParts.push(
+      `${extraBags.length} extra ${extraBags.length === 1 ? "bag" : "bags"}`
+    );
+  } else if (includedBags.length > 0) {
+    summaryParts.push("Fare allowance");
+  }
+  const isEmpty =
+    seats.length === 0 && extraBags.length === 0 && includedBags.length === 0;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Seats & bags</CardTitle>
+        <CardAction>
+          {summaryParts.length > 0 ? summaryParts.join(" · ") : "None selected"}
+        </CardAction>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-3 text-sm">
+        {isEmpty ? (
+          <p className="text-muted-foreground">
+            No seats or extra bags on this order.
+          </p>
+        ) : null}
+        {seats.map((seat) => (
+          <div
+            className="flex items-center justify-between gap-2"
+            key={`${seat.passenger}-${seat.seat}-${seat.segmentIndex}`}
+          >
+            <span className="text-muted-foreground">{seatDetail(seat)}</span>
+            <span className="font-mono">{seat.seat}</span>
+          </div>
+        ))}
+        {seats.length > 0 && baggage.length > 0 ? <Separator /> : null}
+        {baggage.map((bag) => (
+          <div
+            className="flex items-center justify-between gap-2"
+            key={`${bag.source}-${bag.passenger}-${bag.label}-${bag.flightNumber}`}
+          >
+            <span className="text-muted-foreground">{baggageDetail(bag)}</span>
+            <span className="text-end">{bag.label}</span>
+          </div>
+        ))}
+      </CardContent>
+    </Card>
+  );
+};
+
 export const Details = ({
   booking,
   live,
@@ -224,7 +312,10 @@ export const Details = ({
 }) => {
   const segments = getSegments(booking.payload);
   const passengers = getPassengers(booking.payload);
-  const ticketNumbers = getTicketNumbers(live);
+  const ticketNumbers = getTicketNumbers(live ?? booking.payload);
+  const pnr = getPnr(booking, live);
+  const seats = getSeats(live, booking.payload);
+  const baggage = getBaggage(live, booking.payload);
 
   return (
     <div className="flex flex-col gap-4">
@@ -239,7 +330,12 @@ export const Details = ({
 
       <FlightsCard segments={segments} />
       <PassengersCard passengers={passengers} />
-      <TicketingCard booking={booking} ticketNumbers={ticketNumbers} />
+      <AncillariesCard baggage={baggage} seats={seats} />
+      <TicketingCard
+        booking={booking}
+        pnr={pnr}
+        ticketNumbers={ticketNumbers}
+      />
     </div>
   );
 };

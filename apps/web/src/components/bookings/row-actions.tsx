@@ -93,7 +93,6 @@ export const RowActions = ({ booking }: { booking: Booking }) => {
   const onActionSuccess = async (action: LifecycleAction) => {
     toast.success(`${successMessages[action]} · ${booking.orderNo}`);
     setPendingAction(null);
-    // Refresh the list, detail sheet and incidents strip together.
     await Promise.all([
       queryClient.invalidateQueries(trpc.booking.details.queryFilter()),
       queryClient.invalidateQueries(trpc.booking.incidents.queryFilter()),

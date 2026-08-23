@@ -25,6 +25,7 @@ const SheetSkeleton = () => (
   <div className="flex flex-col gap-4">
     <CardSkeleton bodyLines={2} />
     <CardSkeleton action bodyLines={4} />
+    <CardSkeleton action bodyLines={3} />
     <CardSkeleton bodyLines={3} />
     <CardSkeleton bodyLines={3} />
   </div>

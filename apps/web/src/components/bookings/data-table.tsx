@@ -57,6 +57,7 @@ import {
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
+import { CopyPnrButton } from "@/components/bookings/copy-pnr";
 import { RowActions } from "@/components/bookings/row-actions";
 import {
   getPassengers,
@@ -195,10 +196,14 @@ const columns = columnHelper.columns([
   columnHelper.accessor("pnr", {
     cell: (info) => {
       const pnr = info.getValue();
-      return pnr ? (
-        <span className="font-mono text-sm">{pnr}</span>
-      ) : (
-        <span className="text-muted-foreground">—</span>
+      if (!pnr) {
+        return <span className="text-muted-foreground">—</span>;
+      }
+      return (
+        <div className="flex items-center gap-0.5">
+          <span className="font-mono text-sm">{pnr}</span>
+          <CopyPnrButton pnr={pnr} />
+        </div>
       );
     },
     enableSorting: false,
