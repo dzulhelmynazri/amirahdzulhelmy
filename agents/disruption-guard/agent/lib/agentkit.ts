@@ -37,6 +37,17 @@ export const resolveUserId = (ctx: SessionContext): string => {
   return sanitizeId(principalId);
 };
 
+/**
+ * Memory is optional infrastructure. When Upstash is not configured the agent
+ * must still be able to search and book — losing recall is a degraded feature,
+ * not a dead agent. Redis can also go down in production, so this is the right
+ * behaviour either way.
+ */
+export const isMemoryConfigured = (): boolean =>
+  Boolean(
+    process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN
+  );
+
 let redisClient: Redis | null = null;
 
 const redis = (): Redis => {
