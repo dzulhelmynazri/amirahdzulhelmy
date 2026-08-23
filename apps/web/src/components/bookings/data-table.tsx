@@ -32,6 +32,8 @@ import {
   TableHeader,
   TableRow,
 } from "@atlas/ui/components/table";
+import { formatCurrency } from "@atlas/utils/currency";
+import { formatDate } from "@atlas/utils/date";
 import {
   createColumnHelper,
   createSortedRowModel,
@@ -52,6 +54,7 @@ import {
   Search,
   SearchX,
 } from "lucide-react";
+import Link from "next/link";
 import { useMemo, useState } from "react";
 
 import {
@@ -59,19 +62,9 @@ import {
   getSegments,
   statusLabels,
   statusRank,
+  statusVariants,
 } from "@/types/bookings";
 import type { Booking, BookingStatus } from "@/types/bookings";
-
-const statusVariants: Record<
-  BookingStatus,
-  "default" | "destructive" | "ghost" | "outline" | "secondary"
-> = {
-  confirmed: "secondary",
-  created: "outline",
-  issued: "default",
-  refunded: "destructive",
-  voided: "ghost",
-};
 
 type FlagComponent = typeof countryFlags.JP;
 
@@ -84,12 +77,6 @@ const AirportFlag = ({ countryCode }: { countryCode: string }) => {
   }
   return <Flag className="h-3 w-4.5 rounded-[2px] ring-1 ring-foreground/10" />;
 };
-
-const dateFormatter = new Intl.DateTimeFormat("en-US", {
-  day: "numeric",
-  month: "short",
-  year: "numeric",
-});
 
 const SKELETON_ROW_COUNT = 6;
 
@@ -118,7 +105,12 @@ const columnHelper = createColumnHelper<typeof features, Booking>();
 const columns = columnHelper.columns([
   columnHelper.accessor("orderNo", {
     cell: (info) => (
-      <span className="font-mono text-sm font-medium">{info.getValue()}</span>
+      <Link
+        className="font-mono text-sm font-medium underline underline-offset-4"
+        href={`/bookings?booking=${info.getValue()}`}
+      >
+        {info.getValue()}
+      </Link>
     ),
     header: "Order",
   }),
@@ -156,11 +148,7 @@ const columns = columnHelper.columns([
     (row) => getSegments(row.payload).at(0)?.departure ?? "",
     {
       cell: (info) => (
-        <span>
-          {info.getValue()
-            ? dateFormatter.format(new Date(info.getValue()))
-            : "—"}
-        </span>
+        <span>{info.getValue() ? formatDate(info.getValue()) : "—"}</span>
       ),
       header: "Departure",
       id: "departure",
@@ -215,23 +203,18 @@ const columns = columnHelper.columns([
     header: "PNR",
   }),
   columnHelper.accessor((row) => Number(row.totalAmount ?? 0), {
-    cell: (info) => {
-      const currency = info.row.original.currency ?? "USD";
-      const formatter = new Intl.NumberFormat("en-US", {
-        currency,
-        style: "currency",
-      });
-      return (
-        <span className="font-medium">{formatter.format(info.getValue())}</span>
-      );
-    },
+    cell: (info) => (
+      <span className="font-medium">
+        {formatCurrency(info.getValue(), info.row.original.currency)}
+      </span>
+    ),
     header: "Total",
     id: "total",
   }),
   columnHelper.accessor("createdAt", {
     cell: (info) => (
       <span className="text-muted-foreground">
-        {dateFormatter.format(new Date(info.getValue()))}
+        {formatDate(info.getValue())}
       </span>
     ),
     header: "Booked",
@@ -270,7 +253,7 @@ const matchesQuery = (booking: Booking, query: string): boolean => {
   return haystack.includes(query);
 };
 
-export const BookingsTable = ({
+export const DataTable = ({
   bookings,
   loading = false,
 }: {

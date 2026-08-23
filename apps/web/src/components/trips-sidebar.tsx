@@ -20,6 +20,7 @@ import {
 } from "@atlas/ui/components/dropdown-menu";
 import { Input } from "@atlas/ui/components/input";
 import { Skeleton } from "@atlas/ui/components/skeleton";
+import { formatShortDate } from "@atlas/utils/date";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { MoreHorizontal, Plus } from "lucide-react";
 import Link from "next/link";
@@ -250,10 +251,7 @@ export const TripsSidebar = () => {
                         <div className="flex items-baseline justify-between gap-2">
                           <span className="truncate">{trip.title}</span>
                           <span className="text-muted-foreground shrink-0 text-xs tabular-nums">
-                            {new Intl.DateTimeFormat("en", {
-                              day: "numeric",
-                              month: "short",
-                            }).format(new Date(trip.createdAt))}
+                            {formatShortDate(trip.createdAt)}
                           </span>
                         </div>
                         {preview ? (

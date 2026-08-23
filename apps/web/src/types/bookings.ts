@@ -132,3 +132,37 @@ export const statusRank: Record<BookingStatus, number> = {
   refunded: 1,
   voided: 0,
 };
+
+/** Badge variant per booking status, shared by the table and detail views. */
+export const statusVariants: Record<
+  BookingStatus,
+  "default" | "destructive" | "ghost" | "outline" | "secondary"
+> = {
+  confirmed: "secondary",
+  created: "outline",
+  issued: "default",
+  refunded: "destructive",
+  voided: "ghost",
+};
+
+/** Best-effort extraction of ticket numbers from a live Atlas queryOrder response. */
+export const getTicketNumbers = (live: Record<string, unknown> | null) => {
+  if (!live) {
+    return [];
+  }
+  const tickets: string[] = [];
+  for (const key of ["ticketNo", "ticketNumber", "ticketNos"]) {
+    const value = live[key];
+    if (isString(value)) {
+      tickets.push(value);
+    }
+    if (Array.isArray(value)) {
+      for (const entry of value) {
+        if (isString(entry) && !tickets.includes(entry)) {
+          tickets.push(entry);
+        }
+      }
+    }
+  }
+  return tickets;
+};

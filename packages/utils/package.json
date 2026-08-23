@@ -1,0 +1,15 @@
+{
+  "name": "@atlas/utils",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./currency": "./src/currency.ts",
+    "./date": "./src/date.ts"
+  },
+  "scripts": {},
+  "devDependencies": {
+    "@atlas/config": "workspace:*",
+    "typescript": "catalog:"
+  }
+}

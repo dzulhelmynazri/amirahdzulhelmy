@@ -3,6 +3,7 @@
 import { Toaster } from "@atlas/ui/components/sonner";
 import { TooltipProvider } from "@atlas/ui/components/tooltip";
 import { QueryClientProvider } from "@tanstack/react-query";
+import { NuqsAdapter } from "nuqs/adapters/next/app";
 // import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 
 import { queryClient } from "@/utils/trpc";
@@ -18,7 +19,9 @@ export default function Providers({ children }: { children: React.ReactNode }) {
       disableTransitionOnChange
     >
       <QueryClientProvider client={queryClient}>
-        <TooltipProvider>{children}</TooltipProvider>
+        <NuqsAdapter>
+          <TooltipProvider>{children}</TooltipProvider>
+        </NuqsAdapter>
         {/* <ReactQueryDevtools /> */}
       </QueryClientProvider>
       <Toaster richColors />

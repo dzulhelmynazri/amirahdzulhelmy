@@ -23,6 +23,7 @@
   "rtl": false,
   "registries": {
     "@beui": "https://beui.dev/r/{name}.json",
-    "@plate": "https://platejs.org/r/{name}.json"
+    "@plate": "https://platejs.org/r/{name}.json",
+    "@reui": "https://reui.io/r/{style}/{name}.json"
   }
 }

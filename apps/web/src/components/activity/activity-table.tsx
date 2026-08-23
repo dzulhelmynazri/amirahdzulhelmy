@@ -31,6 +31,7 @@ import {
   TableHeader,
   TableRow,
 } from "@atlas/ui/components/table";
+import { formatDateTime } from "@atlas/utils/date";
 import {
   createColumnHelper,
   createSortedRowModel,
@@ -78,13 +79,6 @@ const statusVariants: Record<AlertStatus, "ghost" | "outline" | "secondary"> = {
 type FlagComponent = typeof countryFlags.JP;
 
 const countryFlagRegistry: Record<string, FlagComponent> = { ...countryFlags };
-
-const dateFormatter = new Intl.DateTimeFormat("en-US", {
-  day: "numeric",
-  hour: "numeric",
-  minute: "2-digit",
-  month: "short",
-});
 
 const features = tableFeatures({
   rowSortingFeature,
@@ -189,7 +183,7 @@ const columns = columnHelper.columns([
   columnHelper.accessor("detectedAt", {
     cell: (info) => (
       <span className="text-muted-foreground">
-        {dateFormatter.format(new Date(info.getValue()))}
+        {formatDateTime(info.getValue())}
       </span>
     ),
     header: "Detected",

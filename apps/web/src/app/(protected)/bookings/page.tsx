@@ -2,7 +2,8 @@
 
 import { useQuery } from "@tanstack/react-query";
 
-import { BookingsTable } from "@/components/bookings/bookings-table";
+import { DataTable } from "@/components/bookings/data-table";
+import { DetailsSheet } from "@/components/bookings/details-sheet";
 import { trpc } from "@/utils/trpc";
 
 export default function BookingsPage() {
@@ -12,7 +13,8 @@ export default function BookingsPage() {
 
   return (
     <div className="p-4 sm:p-6">
-      <BookingsTable bookings={bookings} loading={isLoading} />
+      <DataTable bookings={bookings} loading={isLoading} />
+      <DetailsSheet />
     </div>
   );
 }
