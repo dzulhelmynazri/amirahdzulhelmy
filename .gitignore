@@ -49,6 +49,13 @@ lerna-debug.log*
 coverage
 .nyc_output
 
+# MCP (local coding-agent config)
+.mcp.json
+
+# Local agent working notes / change log
+.docs/
+.impeccable
+
 # Misc
 *.tgz
 .cache

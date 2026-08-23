@@ -191,6 +191,7 @@
         "platejs": "^53.3.6",
         "react": "catalog:",
         "react-dom": "catalog:",
+        "recharts": "3.8.0",
         "sonner": "catalog:",
         "topojson-client": "^3.1.0",
         "world-atlas": "^2.0.2",

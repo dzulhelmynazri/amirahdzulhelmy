@@ -7,7 +7,13 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@atlas/ui/components/sidebar";
-import { SquareActivity, Calendar, Plane, ToyBrick } from "lucide-react";
+import {
+  SquareActivity,
+  Calendar,
+  Plane,
+  TicketsPlane,
+  ToyBrick,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -22,6 +28,11 @@ const data = {
       icon: <SquareActivity />,
       title: "Activity",
       url: "/activity",
+    },
+    {
+      icon: <TicketsPlane />,
+      title: "Fares",
+      url: "/fares",
     },
     {
       icon: <Calendar />,
