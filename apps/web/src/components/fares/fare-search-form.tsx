@@ -1,6 +1,13 @@
 import { Button } from "@atlas/ui/components/button";
 import { Calendar } from "@atlas/ui/components/calendar";
 import {
+  Card,
+  CardAction,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@atlas/ui/components/card";
+import {
   Combobox,
   ComboboxCollection,
   ComboboxContent,
@@ -11,6 +18,18 @@ import {
   ComboboxTrigger,
 } from "@atlas/ui/components/combobox";
 import {
+  Field,
+  FieldDescription,
+  FieldGroup,
+  FieldLabel,
+} from "@atlas/ui/components/field";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupInput,
+} from "@atlas/ui/components/input-group";
+import {
   NativeSelect,
   NativeSelectOption,
 } from "@atlas/ui/components/native-select";
@@ -19,17 +38,20 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@atlas/ui/components/popover";
+import { Separator } from "@atlas/ui/components/separator";
 import { Spinner } from "@atlas/ui/components/spinner";
 import { cn } from "@atlas/ui/lib/utils";
+import { formatWeekdayDate } from "@atlas/utils/date";
 import * as countryFlags from "country-flag-icons/react/3x2";
 import {
   ArrowUpDown,
   CalendarDays,
+  Minus,
   Plus,
   RotateCcw,
   Search,
 } from "lucide-react";
-import type { FormEvent, ReactNode } from "react";
+import type { FormEvent } from "react";
 
 import { useFareSearch } from "./fare-search-context";
 import {
@@ -46,22 +68,10 @@ type FlagComponent = typeof countryFlags.MY;
 
 const countryFlagRegistry: Record<string, FlagComponent> = { ...countryFlags };
 
-const dateFormatter = new Intl.DateTimeFormat("en-US", {
-  day: "numeric",
-  month: "short",
-  weekday: "short",
-});
-
 const MS_PER_DAY = 86_400_000;
 
-const passengerOptions = Array.from(
-  { length: maxPassengers - minPassengers + 1 },
-  (_, index) => minPassengers + index
-);
-
-/** Strips the select chrome so the summary rows read as plain key/value text. */
-const inlineSelectClass =
-  "[&>select]:border-transparent [&>select]:bg-transparent [&>select]:font-medium [&>select]:shadow-none dark:[&>select]:bg-transparent";
+const clampPassengers = (value: number) =>
+  Math.min(maxPassengers, Math.max(minPassengers, value));
 
 /** "departure date", "origin and destination", "origin, a date and a return". */
 const listMissing = (fields: string[]): string => {
@@ -94,6 +104,54 @@ const startOfToday = () => {
 const nightsBetween = (from: Date, to: Date) =>
   Math.round((to.getTime() - from.getTime()) / MS_PER_DAY);
 
+const TravellersInput = ({
+  onChange,
+  value,
+}: {
+  onChange: (count: number) => void;
+  value: number;
+}) => (
+  <InputGroup className="w-32">
+    <InputGroupAddon>
+      <InputGroupButton
+        aria-label="Fewer travellers"
+        disabled={value <= minPassengers}
+        onClick={() => onChange(clampPassengers(value - 1))}
+        size="icon-xs"
+      >
+        <Minus />
+      </InputGroupButton>
+    </InputGroupAddon>
+    <InputGroupInput
+      aria-label="Number of travellers"
+      className="text-center [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+      id="fare-travellers"
+      inputMode="numeric"
+      max={maxPassengers}
+      min={minPassengers}
+      onChange={(event) => {
+        const next = event.currentTarget.valueAsNumber;
+        if (Number.isNaN(next)) {
+          return;
+        }
+        onChange(clampPassengers(next));
+      }}
+      type="number"
+      value={value}
+    />
+    <InputGroupAddon align="inline-end">
+      <InputGroupButton
+        aria-label="More travellers"
+        disabled={value >= maxPassengers}
+        onClick={() => onChange(clampPassengers(value + 1))}
+        size="icon-xs"
+      >
+        <Plus />
+      </InputGroupButton>
+    </InputGroupAddon>
+  </InputGroup>
+);
+
 const AirportFlag = ({ countryCode }: { countryCode: string }) => {
   const Flag = countryFlagRegistry[countryCode];
 
@@ -101,7 +159,7 @@ const AirportFlag = ({ countryCode }: { countryCode: string }) => {
     return null;
   }
 
-  return <Flag className="h-3 w-4.5 rounded-[2px] ring-1 ring-foreground/10" />;
+  return <Flag className="size-4" />;
 };
 
 const AirportPicker = ({
@@ -139,8 +197,8 @@ const AirportPicker = ({
           {(airport: Airport) => (
             <ComboboxItem key={airport.code} value={airport}>
               <AirportFlag countryCode={airport.countryCode} />
-              <span className="font-medium">{airport.city}</span>
-              <span className="truncate text-muted-foreground">
+              <span className="font-medium line-clamp-1">{airport.city}</span>
+              <span className="truncate text-muted-foreground line-clamp-1">
                 {airport.name}
               </span>
               <span className="ml-auto text-muted-foreground text-xs">
@@ -191,8 +249,8 @@ const DatePicker = ({
           !value && "font-normal text-muted-foreground"
         )}
       >
-        <CalendarDays className="size-3.5 text-muted-foreground" />
-        {value ? dateFormatter.format(value) : placeholder}
+        <CalendarDays data-icon="inline-start" />
+        {value ? formatWeekdayDate(value) : placeholder}
       </span>
     </PopoverTrigger>
     <PopoverContent align={align} className="w-auto p-0">
@@ -231,7 +289,7 @@ const DatesPanel = ({
   returnDate: Date | undefined;
   today: Date;
 }) => (
-  <div className="mt-2 flex items-stretch gap-1 rounded-2xl bg-muted/50 p-1.5">
+  <div className="flex items-stretch gap-1 rounded-2xl bg-muted/50 p-1.5">
     <DatePicker
       align="start"
       disabledBefore={today}
@@ -242,7 +300,7 @@ const DatesPanel = ({
       value={departure}
     />
 
-    <div aria-hidden="true" className="my-2 w-px shrink-0 bg-border" />
+    <Separator className="my-2" orientation="vertical" />
 
     {isRoundTrip ? (
       <DatePicker
@@ -265,7 +323,7 @@ const DatesPanel = ({
           Return
         </span>
         <span className="flex items-center gap-1.5 text-muted-foreground">
-          <Plus className="size-3.5" />
+          <Plus data-icon="inline-start" />
           Add return
         </span>
       </Button>
@@ -314,19 +372,6 @@ const AirportPanel = ({
     <p className="mt-0.5 h-5 truncate text-muted-foreground text-sm">
       {airport?.name ?? ""}
     </p>
-  </div>
-);
-
-const SummaryRow = ({
-  children,
-  label,
-}: {
-  children: ReactNode;
-  label: string;
-}) => (
-  <div className="flex min-h-9 items-center justify-between gap-2 text-sm">
-    <span className="text-muted-foreground">{label}</span>
-    {children}
   </div>
 );
 
@@ -384,134 +429,135 @@ export const FareSearchForm = ({ onSearched }: { onSearched?: () => void }) => {
 
   return (
     <form onSubmit={handleSubmit}>
-      <div className="rounded-3xl border bg-card p-3 shadow-sm">
-        <div className="flex items-center justify-between px-2 pb-3">
-          <h3 className="font-medium">Search</h3>
-          <Button
-            aria-label="Reset search"
-            onClick={reset}
-            size="icon-sm"
-            type="button"
-            variant="ghost"
-          >
-            <RotateCcw />
-          </Button>
-        </div>
-
-        <AirportPanel
-          airport={origin}
-          emptyLabel="Choose origin"
-          label="From"
-          onAirportChange={(airport) => update({ origin: airport })}
-          pickerLabel="Select origin airport"
-        />
-
-        <div className="-my-3 relative z-10 flex justify-center">
-          <Button
-            aria-label="Swap origin and destination"
-            className="size-9 rounded-full border-4 border-card bg-muted shadow-xs hover:bg-muted"
-            onClick={swapAirports}
-            size="icon"
-            type="button"
-            variant="ghost"
-          >
-            <ArrowUpDown />
-          </Button>
-        </div>
-
-        <AirportPanel
-          airport={destination}
-          emptyLabel="Choose destination"
-          label="To"
-          onAirportChange={(airport) => update({ destination: airport })}
-          pickerLabel="Select destination airport"
-        />
-
-        <DatesPanel
-          departure={departure}
-          isRoundTrip={isRoundTrip}
-          nights={nights}
-          onAddReturn={() => handleTripTypeChange("round-trip")}
-          onDepartureSelect={handleDepartureSelect}
-          onReturnSelect={(date) => update({ returnDate: date })}
-          returnDate={returnDate}
-          today={today}
-        />
-
-        <div className="mt-3 flex flex-col px-3">
-          <SummaryRow label="Trip">
-            <NativeSelect
-              aria-label="Trip type"
-              className={inlineSelectClass}
-              onChange={(event) => {
-                const { value } = event.target;
-                handleTripTypeChange(value as TripType);
-              }}
-              size="sm"
-              value={tripType}
+      <Card size="sm">
+        <CardHeader>
+          <CardTitle>Search</CardTitle>
+          <CardAction>
+            <Button
+              aria-label="Reset search"
+              onClick={reset}
+              size="icon-sm"
+              type="button"
+              variant="ghost"
             >
-              {Object.entries(tripTypeLabels).map(([value, label]) => (
-                <NativeSelectOption key={value} value={value}>
-                  {label}
-                </NativeSelectOption>
-              ))}
-            </NativeSelect>
-          </SummaryRow>
+              <RotateCcw />
+            </Button>
+          </CardAction>
+        </CardHeader>
 
-          <SummaryRow label="Travellers">
-            <NativeSelect
-              aria-label="Number of travellers"
-              className={inlineSelectClass}
-              onChange={(event) => {
-                const { value } = event.target;
-                update({ passengers: Number(value) });
-              }}
-              size="sm"
-              value={passengers}
+        <CardContent>
+          <div>
+            <AirportPanel
+              airport={origin}
+              emptyLabel="Choose origin"
+              label="From"
+              onAirportChange={(airport) => update({ origin: airport })}
+              pickerLabel="Select origin airport"
+            />
+
+            <div className="-my-3 relative z-10 flex justify-center">
+              <Button
+                aria-label="Swap origin and destination"
+                className="size-9 rounded-full border-4 border-card bg-muted shadow-xs hover:bg-muted"
+                onClick={swapAirports}
+                size="icon"
+                type="button"
+                variant="ghost"
+              >
+                <ArrowUpDown />
+              </Button>
+            </div>
+
+            <AirportPanel
+              airport={destination}
+              emptyLabel="Choose destination"
+              label="To"
+              onAirportChange={(airport) => update({ destination: airport })}
+              pickerLabel="Select destination airport"
+            />
+          </div>
+
+          <DatesPanel
+            departure={departure}
+            isRoundTrip={isRoundTrip}
+            nights={nights}
+            onAddReturn={() => handleTripTypeChange("round-trip")}
+            onDepartureSelect={handleDepartureSelect}
+            onReturnSelect={(date) => update({ returnDate: date })}
+            returnDate={returnDate}
+            today={today}
+          />
+
+          <FieldGroup className="gap-1">
+            <Field orientation="horizontal">
+              <FieldLabel htmlFor="fare-trip-type">Trip</FieldLabel>
+              <NativeSelect
+                id="fare-trip-type"
+                onChange={(event) => {
+                  const { value } = event.target;
+                  handleTripTypeChange(value as TripType);
+                }}
+                size="sm"
+                value={tripType}
+              >
+                {Object.entries(tripTypeLabels).map(([value, label]) => (
+                  <NativeSelectOption key={value} value={value}>
+                    {label}
+                  </NativeSelectOption>
+                ))}
+              </NativeSelect>
+            </Field>
+
+            <Field orientation="horizontal">
+              <FieldLabel htmlFor="fare-travellers">Travellers</FieldLabel>
+              <TravellersInput
+                onChange={(count) => update({ passengers: count })}
+                value={passengers}
+              />
+            </Field>
+
+            <Field orientation="horizontal">
+              <FieldLabel htmlFor="fare-cabin">Cabin</FieldLabel>
+              <NativeSelect
+                id="fare-cabin"
+                onChange={(event) => {
+                  const { value } = event.target;
+                  update({ cabin: value as CabinClass });
+                }}
+                size="sm"
+                value={cabin}
+              >
+                {Object.entries(cabinLabels).map(([value, label]) => (
+                  <NativeSelectOption key={value} value={value}>
+                    {label}
+                  </NativeSelectOption>
+                ))}
+              </NativeSelect>
+            </Field>
+          </FieldGroup>
+
+          <Field>
+            <Button
+              className="w-full"
+              disabled={!canSearch || isSearching}
+              size="lg"
+              type="submit"
             >
-              {passengerOptions.map((count) => (
-                <NativeSelectOption key={count} value={count}>
-                  {count} traveller{count > 1 ? "s" : ""}
-                </NativeSelectOption>
-              ))}
-            </NativeSelect>
-          </SummaryRow>
-
-          <SummaryRow label="Cabin">
-            <NativeSelect
-              aria-label="Cabin class"
-              className={inlineSelectClass}
-              onChange={(event) => {
-                const { value } = event.target;
-                update({ cabin: value as CabinClass });
-              }}
-              size="sm"
-              value={cabin}
-            >
-              {Object.entries(cabinLabels).map(([value, label]) => (
-                <NativeSelectOption key={value} value={value}>
-                  {label}
-                </NativeSelectOption>
-              ))}
-            </NativeSelect>
-          </SummaryRow>
-        </div>
-
-        <Button
-          className="mt-3 h-12 w-full"
-          disabled={!canSearch || isSearching}
-          type="submit"
-        >
-          {isSearching ? <Spinner /> : <Search />}
-          {searchLabel(origin, destination, isSearching)}
-        </Button>
-
-        {blockingFields.length > 0 && !isSearching ? (
-          <p className="mt-2 text-center text-muted-foreground text-sm">
-            Add a {listMissing(blockingFields)} to search.
-          </p>
-        ) : null}
-      </div>
+              {isSearching ? (
+                <Spinner data-icon="inline-start" />
+              ) : (
+                <Search data-icon="inline-start" />
+              )}
+              {searchLabel(origin, destination, isSearching)}
+            </Button>
+            {blockingFields.length > 0 && !isSearching ? (
+              <FieldDescription className="text-center">
+                Add a {listMissing(blockingFields)} to search.
+              </FieldDescription>
+            ) : null}
+          </Field>
+        </CardContent>
+      </Card>
     </form>
   );
 };
