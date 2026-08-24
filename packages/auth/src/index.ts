@@ -2,7 +2,6 @@ import { createDb } from "@atlas/db";
 import * as schema from "@atlas/db/schema/auth";
 import { env } from "@atlas/env/server";
 import { betterAuth } from "better-auth";
-import { telegram } from "better-auth-telegram";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { nextCookies } from "better-auth/next-js";
 import { lastLoginMethod } from "better-auth/plugins";
@@ -20,14 +19,7 @@ export const createAuth = () => {
     emailAndPassword: {
       enabled: true,
     },
-    plugins: [
-      telegram({
-        botToken: env.TELEGRAM_BOT_TOKEN,
-        botUsername: env.TELEGRAM_BOT_USERNAME,
-      }),
-      lastLoginMethod(),
-      nextCookies(),
-    ],
+    plugins: [lastLoginMethod(), nextCookies()],
     secret: env.BETTER_AUTH_SECRET,
     socialProviders: {
       google: {

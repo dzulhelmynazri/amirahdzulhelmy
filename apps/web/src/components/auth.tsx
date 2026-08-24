@@ -1,21 +1,13 @@
 import { Badge } from "@atlas/ui/components/badge";
 import { Button } from "@atlas/ui/components/button";
-import { Google, Telegram } from "@atlas/ui/components/socials";
+import { Google } from "@atlas/ui/components/socials";
 
 import { authClient } from "@/lib/auth-client";
 
-import Loader from "./loader";
-
 const handleGoogleSignIn = async () => {
   await authClient.signIn.social({
-    callbackURL: "/trips",
+    callbackURL: "/activity",
     provider: "google",
-  });
-};
-
-const handleTelegramSignIn = async () => {
-  await authClient.signInWithTelegramOIDC({
-    callbackURL: "/trips",
   });
 };
 
@@ -24,7 +16,11 @@ export default function Auth() {
   const lastMethod = authClient.getLastUsedLoginMethod();
 
   if (isPending) {
-    return <Loader />;
+    return (
+      <div className="flex min-h-svh items-center justify-center p-4">
+        Wait ahh...
+      </div>
+    );
   }
 
   return (
@@ -43,19 +39,6 @@ export default function Auth() {
             <Google className="size-4" />
             Continue with Google
             {lastMethod === "google" && (
-              <Badge variant="secondary" className="absolute -top-2 -right-3">
-                Last used
-              </Badge>
-            )}
-          </Button>
-          <Button
-            onClick={handleTelegramSignIn}
-            className="w-full gap-2 relative"
-            variant="outline"
-          >
-            <Telegram className="size-4" />
-            Continue with Telegram
-            {lastMethod === "telegram" && (
               <Badge variant="secondary" className="absolute -top-2 -right-3">
                 Last used
               </Badge>

@@ -1,5 +1,4 @@
 export * from "./google";
-export * from "./telegram";
 export * from "./google-calendar";
 export * from "./whatsapp";
 export * from "./slack";

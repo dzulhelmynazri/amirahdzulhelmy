@@ -14,7 +14,6 @@
     "@atlas/db": "workspace:*",
     "@atlas/env": "workspace:*",
     "better-auth": "catalog:",
-    "better-auth-telegram": "^2.0.1",
     "dotenv": "catalog:",
     "zod": "catalog:"
   },

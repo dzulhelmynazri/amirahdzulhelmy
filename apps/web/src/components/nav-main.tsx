@@ -20,15 +20,11 @@ import { usePathname } from "next/navigation";
 const data = {
   navMain: [
     {
-      icon: <Plane />,
-      title: "Trips",
-      url: "/trips",
-    },
-    {
       icon: <SquareActivity />,
       title: "Activity",
       url: "/activity",
     },
+
     {
       icon: <TicketsPlane />,
       title: "Fares",
@@ -38,6 +34,11 @@ const data = {
       icon: <Calendar />,
       title: "Bookings",
       url: "/bookings",
+    },
+    {
+      icon: <Plane />,
+      title: "Trips",
+      url: "/trips",
     },
     {
       icon: <ToyBrick />,

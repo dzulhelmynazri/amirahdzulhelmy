@@ -26,8 +26,6 @@ export const env = createEnv({
     S3_ENDPOINT: z.url().optional(),
     S3_REGION: z.string().min(1),
     S3_SECRET_ACCESS_KEY: z.string().min(1),
-    TELEGRAM_BOT_TOKEN: z.string().min(1),
-    TELEGRAM_BOT_USERNAME: z.string().min(1),
   },
   skipValidation: !!process.env.SKIP_ENV_VALIDATION,
 });

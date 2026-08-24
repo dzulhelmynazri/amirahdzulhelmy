@@ -8,9 +8,6 @@ export const user = pgTable("user", {
   id: text("id").primaryKey(),
   image: text("image"),
   name: text("name").notNull(),
-  telegramId: text("telegram_id"),
-  telegramPhoneNumber: text("telegram_phone_number"),
-  telegramUsername: text("telegram_username"),
   updatedAt: timestamp("updated_at")
     .defaultNow()
     /* @__PURE__ */

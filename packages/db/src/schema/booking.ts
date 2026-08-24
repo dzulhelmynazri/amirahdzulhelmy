@@ -19,7 +19,7 @@ export const booking = pgTable(
     payload: jsonb("payload").$type<Record<string, unknown>>(),
     pnr: text("pnr"),
     // Identity of the channel principal that drove the latest event, kept when
-    // the principal cannot be mapped to a user row (e.g. a Telegram chat id).
+    // the principal cannot be mapped to a user row.
     principalId: text("principal_id"),
     status: text("status").notNull(),
     totalAmount: text("total_amount"),
