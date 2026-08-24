@@ -23,6 +23,12 @@ import { feature } from "topojson-client";
 import type { GeometryCollection, Topology } from "topojson-specification";
 import worldData from "world-atlas/countries-110m.json";
 
+import type {
+  ActivityAlert,
+  AlertSeverity,
+  DestinationMarker,
+} from "@/types/activity";
+
 import {
   categoryLabels,
   destinationMarkers,
@@ -30,12 +36,7 @@ import {
   severityRank,
   sourceHostname,
   statusLabels,
-} from "./activity-data";
-import type {
-  ActivityAlert,
-  AlertSeverity,
-  DestinationMarker,
-} from "./activity-data";
+} from "./data";
 
 const GLOBE_HEIGHT = 480;
 const GLOBE_WIDTH = 640;

@@ -11,8 +11,9 @@ import { ChartContainer } from "@atlas/ui/components/chart";
 import type { ChartConfig } from "@atlas/ui/components/chart";
 import { Pie, PieChart } from "recharts";
 
-import { categoryLabels } from "./activity-data";
-import type { ActivityAlert, AlertCategory } from "./activity-data";
+import type { ActivityAlert, AlertCategory } from "@/types/activity";
+
+import { categoryLabels } from "./data";
 
 const chartPalette = [
   "var(--chart-1)",

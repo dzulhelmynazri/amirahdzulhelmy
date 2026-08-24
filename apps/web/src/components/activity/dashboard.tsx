@@ -4,10 +4,10 @@ import { useQuery } from "@tanstack/react-query";
 
 import { trpc } from "@/utils/trpc";
 
-import { toActivityAlerts } from "./activity-data";
-import { ActivityMap } from "./activity-map";
-import { ActivityTable } from "./activity-table";
 import { CategoryChart } from "./category-chart";
+import { toActivityAlerts } from "./data";
+import { ActivityTable } from "./data-table";
+import { ActivityMap } from "./map";
 import { SentinelMonitorCard } from "./sentinel-monitor-card";
 
 export const ActivityDashboard = () => {

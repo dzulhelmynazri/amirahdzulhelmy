@@ -1,15 +1,5 @@
 "use client";
 
-import type { AgentActivityItem } from "@atlas/ui/components/agents/agent-activity";
-import { AgentActivity } from "@atlas/ui/components/agents/agent-activity";
-import type { AgentCodeLanguage } from "@atlas/ui/components/agents/agent-code";
-import { AgentCode } from "@atlas/ui/components/agents/agent-code";
-import { ApprovalCard } from "@atlas/ui/components/agents/approval-card";
-import type {
-  ApprovalCardAnswers,
-  ApprovalCardQuestion,
-} from "@atlas/ui/components/agents/approval-card";
-import type { CitationItem } from "@atlas/ui/components/agents/citations";
 import { ThinkingShimmer } from "@atlas/ui/components/agents/loading-states/thinking-shimmer";
 import {
   Message,
@@ -18,29 +8,19 @@ import {
   MessageGroup,
   MessageScroller,
 } from "@atlas/ui/components/agents/message";
-import type { MessageFrom } from "@atlas/ui/components/agents/message";
-import {
-  MessageBubble,
-  MessageBubbleCollapsible,
-  MessageBubbleContent,
-} from "@atlas/ui/components/agents/message-bubble";
 import { PromptInput } from "@atlas/ui/components/agents/prompt-input";
-import { StreamingResponse } from "@atlas/ui/components/agents/streaming-response";
-import { TodoList } from "@atlas/ui/components/agents/todo-list";
-import type { TodoItem } from "@atlas/ui/components/agents/todo-list";
-import {
-  ToolResult,
-  ToolResultOutput,
-} from "@atlas/ui/components/agents/tool-result";
 import { Button } from "@atlas/ui/components/button";
 import { Kbd, KbdGroup } from "@atlas/ui/components/kbd";
 import { cn } from "@atlas/ui/lib/utils";
 import { BorderBeam } from "border-beam";
-import { User, XIcon } from "lucide-react";
+import type { EveMessage } from "eve/react";
+import { SquarePen, User, XIcon } from "lucide-react";
 import Image from "next/image";
 import { useCallback, useState } from "react";
 
+import { AtlasAgentMessageBody } from "@/components/atlas-agent-message";
 import { useAgentSidebarSync } from "@/hooks/use-agent-panel";
+import { useEveChat } from "@/hooks/use-eve-chat";
 
 const AGENT_NAME = "Flight Guardian";
 
@@ -52,263 +32,54 @@ const SUGGESTIONS = [
 
 const AVATAR_URL = `https://api.dicebear.com/10.x/notionists/svg?seed=${encodeURIComponent(AGENT_NAME)}`;
 
-interface ChatMessage {
-  activity?: AgentActivityItem[];
-  approvalQuestions?: ApprovalCardQuestion[];
-  code?: { code: string; language: AgentCodeLanguage };
-  collapsible?: boolean;
-  content: string;
-  from: MessageFrom;
-  id: string;
-  kind?: "text" | "activity" | "tool" | "approval" | "todo";
-  sources?: CitationItem[];
-  todos?: TodoItem[];
-  tool?: { action: string; target: string };
-}
-
-const DEMO_SOURCES: CitationItem[] = [
-  {
-    domain: "flightaware.com",
-    id: "flight-data",
-    title: "Live flight tracking",
-    url: "https://flightaware.com",
-  },
-  {
-    domain: "aviationweek.com",
-    id: "disruption-report",
-    title: "Disruption analysis",
-    url: "https://aviationweek.com",
-  },
-];
-
-const DEMO_TODOS: TodoItem[] = [
-  { id: "t1", status: "completed", title: "Analyse flight patterns" },
-  { id: "t2", status: "completed", title: "Identify disruption risks" },
-  { id: "t3", status: "in-progress", title: "Prepare recovery options" },
-];
-
-const APPROVAL_QUESTIONS: ApprovalCardQuestion[] = [
-  {
-    allowCustom: true,
-    customPlaceholder: "Describe another focus area…",
-    id: "focus",
-    options: [
-      { label: "Booking experience", value: "booking" },
-      { label: "Disruption recovery", value: "disruption" },
-      { label: "Multi-modal journeys", value: "multi-modal" },
-    ],
-    title: "What should the first release focus on?",
-  },
-];
-
-// Placeholder messages — demonstrates all beui component capabilities
-const INITIAL_MESSAGES: ChatMessage[] = [
-  {
-    content:
-      "I'm Flight Guardian. I watch your trips, detect disruptions, and help recover journeys. How can I help?",
-    from: "assistant",
-    id: "welcome",
-    kind: "text",
-  },
-  {
-    activity: [
-      {
-        content:
-          "Mapping the trip recovery workflow and identifying failure points.",
-        id: "reasoning-1",
-        type: "text",
-      },
-      {
-        content:
-          "Cross-referencing disruption patterns with historical recovery data.",
-        id: "reasoning-2",
-        type: "text",
-      },
-      {
-        id: "search",
-        query: "flight disruption recovery patterns 2026",
-        results: [
-          { domain: "flightaware.com", id: "fa", title: "FlightAware" },
-          { domain: "aviationweek.com", id: "aw", title: "Aviation Week" },
-        ],
-        type: "search",
-      },
-      {
-        action: "read",
-        id: "read",
-        target: "trip-recovery-playbook.md",
-        type: "tool",
-      },
-    ],
-    content: "",
-    from: "assistant",
-    id: "activity",
-    kind: "activity",
-  },
-  {
-    code: {
-      code: "bun test tests/a11y.test.tsx\n49 pass · 0 fail",
-      language: "bash",
-    },
-    content: "Running accessibility suite",
-    from: "assistant",
-    id: "tool-result",
-    kind: "tool",
-    tool: { action: "terminal.run", target: "tests/a11y.test.tsx" },
-  },
-  {
-    approvalQuestions: APPROVAL_QUESTIONS,
-    content: "Before I prepare the launch update, a quick question:",
-    from: "assistant",
-    id: "approval",
-    kind: "approval",
-  },
-  {
-    content:
-      "I've prepared a comprehensive launch readiness report covering accessibility, interaction flow, error recovery, and reduced-motion behavior.",
-    from: "assistant",
-    id: "long-response",
-    kind: "text",
-    sources: DEMO_SOURCES,
-    todos: DEMO_TODOS,
-  },
-  {
-    collapsible: true,
-    content:
-      "The release is ready for a focused rollout. The main conversation flow, keyboard navigation, error recovery, and reduced-motion behavior are all covered.\n\nI would keep advanced workflow controls out of this version. They add configuration without improving the first-run experience, and the usage data from this release will give us a better basis for those decisions.\n\nBefore publishing, run the accessibility suite once more and verify the streaming behavior with a long response on a smaller viewport.",
-    from: "assistant",
-    id: "collapsible",
-    kind: "text",
-  },
-];
-
 const AgentHeader = ({
   close,
+  onReset,
+  showReset,
 }: {
   close: () => void;
-  isFullWidth: boolean;
-  toggleFullWidth: () => void;
+  onReset: () => void;
+  showReset: boolean;
 }) => (
   <div className="flex h-16 shrink-0 items-center justify-between border-b px-4 transition-[height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-[48.5px]">
     <h2 className="font-semibold text-sm">{AGENT_NAME}</h2>
-    <Button
-      aria-label="Close agent"
-      onClick={close}
-      size="icon-sm"
-      variant="ghost"
-    >
-      <XIcon />
-    </Button>
+    <div className="flex items-center gap-1">
+      {showReset ? (
+        <Button
+          aria-label="Start a new conversation"
+          onClick={onReset}
+          size="icon-sm"
+          variant="ghost"
+        >
+          <SquarePen />
+        </Button>
+      ) : null}
+      <Button
+        aria-label="Close agent"
+        onClick={close}
+        size="icon-sm"
+        variant="ghost"
+      >
+        <XIcon />
+      </Button>
+    </div>
   </div>
 );
 
-const renderToolResult = (msg: ChatMessage) => {
-  if (!msg.tool) {
-    return null;
-  }
-  return (
-    <ToolResult
-      collapseOnComplete={false}
-      kind="terminal"
-      maxHeight={150}
-      status="success"
-      title={msg.content}
-      tool={msg.tool.action}
-    >
-      {msg.code ? (
-        <AgentCode code={msg.code.code} language={msg.code.language} />
-      ) : (
-        <ToolResultOutput>{msg.content}</ToolResultOutput>
-      )}
-    </ToolResult>
-  );
-};
-
-const renderAgentResponse = (msg: ChatMessage, isLast: boolean) => {
-  if (msg.collapsible) {
-    return (
-      <StreamingResponse
-        showActions={false}
-        sources={msg.sources}
-        status="complete"
-      >
-        <MessageBubbleCollapsible collapsedLines={3}>
-          <p>{msg.content}</p>
-        </MessageBubbleCollapsible>
-      </StreamingResponse>
-    );
-  }
-
-  return (
-    <StreamingResponse
-      showActions={!isLast}
-      sources={msg.sources}
-      status="complete"
-    >
-      {msg.content}
-    </StreamingResponse>
-  );
-};
-
-const renderBubble = (msg: ChatMessage, isAgent: boolean, isLast: boolean) => (
-  <MessageBubble
-    animateIn={isLast}
-    variant={msg.from === "user" ? "solid" : "soft"}
-  >
-    <MessageBubbleContent>
-      {msg.todos && msg.todos.length > 0 && (
-        <TodoList className="mb-3" items={msg.todos} />
-      )}
-      {isAgent ? renderAgentResponse(msg, isLast) : msg.content}
-    </MessageBubbleContent>
-  </MessageBubble>
-);
-
-const renderMessageContent = (
-  msg: ChatMessage,
-  isAgent: boolean,
-  isLast: boolean
-) => {
-  if (msg.kind === "activity" && msg.activity) {
-    return (
-      <AgentActivity
-        collapseOnComplete
-        contentType="mixed"
-        items={msg.activity}
-        maxHeight={220}
-        status="complete"
-      />
-    );
-  }
-
-  if (msg.kind === "tool" && msg.tool) {
-    return renderToolResult(msg);
-  }
-
-  if (msg.kind === "approval" && msg.approvalQuestions) {
-    return (
-      <ApprovalCard
-        onSubmit={(_answers: ApprovalCardAnswers) => {
-          /* wire to backend */
-        }}
-        questions={msg.approvalQuestions}
-        result="Response recorded."
-        status="answered"
-      />
-    );
-  }
-
-  return renderBubble(msg, isAgent, isLast);
-};
-
 const AgentMessages = ({
-  isTyping,
+  isBusy,
   messages,
+  respond,
 }: {
-  isTyping: boolean;
-  messages: ChatMessage[];
+  isBusy: boolean;
+  messages: readonly EveMessage[];
+  respond: ReturnType<typeof useEveChat>["actions"]["respond"];
 }) => {
-  if (messages.length === 0 && !isTyping) {
+  const last = messages.at(-1);
+  const waitingForAssistant =
+    isBusy && (last?.role !== "assistant" || last.parts.length === 0);
+
+  if (messages.length === 0 && !isBusy) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-center">
         <h3 className="font-semibold text-base">{AGENT_NAME}</h3>
@@ -321,7 +92,7 @@ const AgentMessages = ({
 
   return (
     <MessageScroller
-      busy={isTyping}
+      busy={isBusy}
       className="flex-1"
       followOutput
       followThreshold={56}
@@ -331,12 +102,12 @@ const AgentMessages = ({
       smooth
     >
       <MessageGroup className="p-4">
-        {messages.map((msg, index) => {
+        {messages.map((message, index) => {
           const isLast = index === messages.length - 1;
-          const isAgent = msg.from === "assistant";
+          const isAgent = message.role === "assistant";
 
           return (
-            <Message animateIn={isLast} from={msg.from} key={msg.id}>
+            <Message animateIn={isLast} from={message.role} key={message.id}>
               <MessageAvatar>
                 {isAgent ? (
                   <Image
@@ -352,13 +123,17 @@ const AgentMessages = ({
                 )}
               </MessageAvatar>
               <MessageContent>
-                {renderMessageContent(msg, isAgent, isLast)}
+                <AtlasAgentMessageBody
+                  isLast={isLast}
+                  message={message}
+                  respond={respond}
+                />
               </MessageContent>
             </Message>
           );
         })}
 
-        {isTyping && (
+        {waitingForAssistant ? (
           <Message from="assistant" key="typing">
             <MessageAvatar>
               <Image
@@ -376,7 +151,7 @@ const AgentMessages = ({
               </ThinkingShimmer>
             </MessageContent>
           </Message>
-        )}
+        ) : null}
       </MessageGroup>
     </MessageScroller>
   );
@@ -384,14 +159,22 @@ const AgentMessages = ({
 
 const AgentComposer = ({
   draft,
+  errorMessage,
+  isBusy,
   isEmpty,
   isFullWidth,
+  onStop,
   onSubmit,
+  ready,
 }: {
   draft: string;
+  errorMessage?: string;
+  isBusy: boolean;
   isEmpty: boolean;
   isFullWidth: boolean;
+  onStop: () => void;
   onSubmit: (text: string) => void;
+  ready: boolean;
 }) => {
   const [value, setValue] = useState("");
   const [lastDraft, setLastDraft] = useState(draft);
@@ -416,7 +199,7 @@ const AgentComposer = ({
 
   return (
     <div className="flex shrink-0 flex-col gap-3 p-4">
-      {isEmpty && (
+      {isEmpty ? (
         <>
           <div className="flex flex-col items-start gap-1.5">
             {SUGGESTIONS.map((suggestion) => (
@@ -439,10 +222,16 @@ const AgentComposer = ({
             <span>{isFullWidth ? "to close" : "for full width"}</span>
           </div>
         </>
-      )}
+      ) : null}
+      {errorMessage ? (
+        <p className="text-destructive text-sm">{errorMessage}</p>
+      ) : null}
       <BorderBeam colorVariant="colorful" size="pulse-inner" strength={0.7}>
         <PromptInput
           aria-label="Message me"
+          disabled={!ready}
+          loading={isBusy}
+          onStop={onStop}
           onSubmit={handleSubmit}
           onValueChange={setValue}
           placeholder="Ask me anything..."
@@ -454,29 +243,26 @@ const AgentComposer = ({
 };
 
 export const AtlasAgent = () => {
+  const { isOpen, isFullWidth, closeAgent, draft, mounted, setDraft } =
+    useAgentSidebarSync();
   const {
-    isOpen,
-    isFullWidth,
-    closeAgent,
-    draft,
-    mounted,
-    setDraft,
-    toggleAgent,
-  } = useAgentSidebarSync();
+    actions: { cancel, reset, respond, send },
+    state: { error, messages, ready, status },
+  } = useEveChat();
 
-  const [messages, setMessages] = useState<ChatMessage[]>(INITIAL_MESSAGES);
+  const isBusy = status === "submitted" || status === "streaming";
 
   const handleSubmit = useCallback(
     (text: string) => {
-      setMessages((prev) => [
-        ...prev,
-        { content: text, from: "user", id: `user-${Date.now()}` },
-      ]);
       setDraft("");
-      // Placeholder — wire to agent backend to produce a response
+      void send(text);
     },
-    [setDraft]
+    [send, setDraft]
   );
+
+  const handleStop = useCallback(() => {
+    void cancel();
+  }, [cancel]);
 
   return (
     <aside
@@ -508,17 +294,25 @@ export const AtlasAgent = () => {
         >
           <AgentHeader
             close={closeAgent}
-            isFullWidth={isFullWidth}
-            toggleFullWidth={() => toggleAgent(!isFullWidth)}
+            onReset={reset}
+            showReset={messages.length > 0}
           />
 
           <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col overflow-hidden">
-            <AgentMessages isTyping={false} messages={messages} />
+            <AgentMessages
+              isBusy={isBusy}
+              messages={messages}
+              respond={respond}
+            />
             <AgentComposer
               draft={draft}
+              errorMessage={status === "error" ? error?.message : undefined}
+              isBusy={isBusy}
               isEmpty={messages.length === 0}
               isFullWidth={isFullWidth}
+              onStop={handleStop}
               onSubmit={handleSubmit}
+              ready={ready}
             />
           </div>
         </div>

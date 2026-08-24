@@ -1,27 +1,11 @@
-export type AlertCategory =
-  | "health"
-  | "political"
-  | "safety"
-  | "transit"
-  | "weather";
-
-export type AlertSeverity = "critical" | "high" | "low" | "medium";
-
-export type AlertStatus = "active" | "resolved" | "superseded";
-
-export interface ActivityAlert {
-  id: string;
-  category: AlertCategory;
-  countryCode: string;
-  severity: AlertSeverity;
-  destination: string;
-  latitude: number;
-  longitude: number;
-  summary: string;
-  source: string;
-  detectedAt: string;
-  status: AlertStatus;
-}
+import type {
+  ActivityAlert,
+  ActivityAlertRow,
+  AlertCategory,
+  AlertSeverity,
+  AlertStatus,
+  DestinationMarker,
+} from "@/types/activity";
 
 export const sentinelSchedule = {
   intervalHours: 6,
@@ -66,19 +50,7 @@ const isAlertStatus = (value: string): value is AlertStatus =>
   Object.hasOwn(statusLabels, value);
 
 export const toActivityAlerts = (
-  rows: readonly {
-    category: string;
-    countryCode: string;
-    destination: string;
-    detectedAt: string;
-    id: string;
-    latitude: number;
-    longitude: number;
-    severity: string;
-    source: string;
-    status: string;
-    summary: string;
-  }[]
+  rows: readonly ActivityAlertRow[]
 ): ActivityAlert[] =>
   rows.flatMap((row) => {
     if (
@@ -114,17 +86,6 @@ export const sourceHostname = (source: string): string => {
     return source;
   }
 };
-
-export interface DestinationMarker {
-  activeCount: number;
-  alertCount: number;
-  countryCode: string;
-  destination: string;
-  firstSeenAt: string;
-  latitude: number;
-  longitude: number;
-  worstSeverity: AlertSeverity;
-}
 
 export const destinationMarkers = (
   alerts: readonly ActivityAlert[]

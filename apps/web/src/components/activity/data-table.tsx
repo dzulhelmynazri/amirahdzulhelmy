@@ -46,19 +46,20 @@ import { ArrowDown, ArrowUp, ArrowUpDown, Search, SearchX } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
+import type {
+  ActivityAlert,
+  AlertCategory,
+  AlertSeverity,
+  AlertStatus,
+} from "@/types/activity";
+
 import {
   categoryLabels,
   severityLabels,
   severityRank,
   sourceHostname,
   statusLabels,
-} from "./activity-data";
-import type {
-  ActivityAlert,
-  AlertCategory,
-  AlertSeverity,
-  AlertStatus,
-} from "./activity-data";
+} from "./data";
 
 const severityVariants: Record<
   AlertSeverity,
