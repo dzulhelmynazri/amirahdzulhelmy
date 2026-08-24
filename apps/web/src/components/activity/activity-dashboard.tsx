@@ -8,6 +8,7 @@ import { toActivityAlerts } from "./activity-data";
 import { ActivityMap } from "./activity-map";
 import { ActivityTable } from "./activity-table";
 import { CategoryChart } from "./category-chart";
+import { SentinelMonitorCard } from "./sentinel-monitor-card";
 
 export const ActivityDashboard = () => {
   const { data = [] } = useQuery(trpc.activity.list.queryOptions());
@@ -16,10 +17,13 @@ export const ActivityDashboard = () => {
   return (
     <div className="flex flex-col gap-4 p-4 sm:p-6">
       <div className="grid gap-4 lg:grid-cols-3">
-        <div className="lg:col-span-2">
+        <div className="h-full lg:col-span-2">
           <ActivityMap alerts={alerts} />
         </div>
-        <CategoryChart alerts={alerts} />
+        <div className="flex h-full flex-col gap-4">
+          <SentinelMonitorCard />
+          <CategoryChart alerts={alerts} />
+        </div>
       </div>
       <ActivityTable alerts={alerts} />
     </div>

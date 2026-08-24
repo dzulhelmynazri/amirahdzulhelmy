@@ -51,13 +51,16 @@ export const CategoryChart = ({ alerts }: { alerts: ActivityAlert[] }) => {
   }));
 
   return (
-    <Card>
+    <Card className="flex-1">
       <CardHeader>
         <CardTitle>Alerts by category</CardTitle>
         <CardDescription>{categorySummary}.</CardDescription>
       </CardHeader>
-      <CardContent className="flex flex-col gap-4">
-        <ChartContainer config={chartConfig} className="mx-auto h-40 w-full">
+      <CardContent className="flex flex-1 flex-col gap-4">
+        <ChartContainer
+          config={chartConfig}
+          className="mx-auto h-40 min-h-40 w-full flex-1"
+        >
           <PieChart>
             <Pie
               data={categoryData}

@@ -6,3 +6,5 @@ export * from "./gmail";
 export * from "./google-sheets";
 export * from "./notion";
 export * from "./google-maps";
+export * from "./qwen";
+export * from "./firecrawl";
