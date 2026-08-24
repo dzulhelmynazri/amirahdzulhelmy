@@ -25,12 +25,17 @@ import worldData from "world-atlas/countries-110m.json";
 
 import {
   categoryLabels,
-  mockAlerts,
+  destinationMarkers,
   severityLabels,
   severityRank,
+  sourceHostname,
   statusLabels,
 } from "./activity-data";
-import type { AlertSeverity } from "./activity-data";
+import type {
+  ActivityAlert,
+  AlertSeverity,
+  DestinationMarker,
+} from "./activity-data";
 
 const GLOBE_HEIGHT = 480;
 const GLOBE_WIDTH = 640;
@@ -54,49 +59,9 @@ const legendClasses: Record<AlertSeverity, string> = {
   medium: "bg-primary",
 };
 
-interface DestinationMarker {
-  activeCount: number;
-  alertCount: number;
-  countryCode: string;
-  destination: string;
-  firstSeenAt: string;
-  latitude: number;
-  longitude: number;
-  worstSeverity: AlertSeverity;
-}
-
-const markers: DestinationMarker[] = (() => {
-  const byDestination = new Map<string, DestinationMarker>();
-  for (const alert of mockAlerts) {
-    const existing = byDestination.get(alert.destination);
-    if (!existing) {
-      byDestination.set(alert.destination, {
-        activeCount: alert.status === "active" ? 1 : 0,
-        alertCount: 1,
-        countryCode: alert.countryCode,
-        destination: alert.destination,
-        firstSeenAt: alert.detectedAt,
-        latitude: alert.latitude,
-        longitude: alert.longitude,
-        worstSeverity: alert.severity,
-      });
-      continue;
-    }
-    existing.alertCount += 1;
-    if (alert.status === "active") {
-      existing.activeCount += 1;
-    }
-    if (alert.detectedAt < existing.firstSeenAt) {
-      existing.firstSeenAt = alert.detectedAt;
-    }
-    if (severityRank[alert.severity] > severityRank[existing.worstSeverity]) {
-      existing.worstSeverity = alert.severity;
-    }
-  }
-  return [...byDestination.values()];
-})();
-
-const routeArcs: MultiLineString = (() => {
+const routeArcsFromMarkers = (
+  markers: readonly DestinationMarker[]
+): MultiLineString => {
   const ordered = markers.toSorted((a, b) =>
     a.firstSeenAt.localeCompare(b.firstSeenAt)
   );
@@ -112,7 +77,7 @@ const routeArcs: MultiLineString = (() => {
     previous = marker;
   }
   return { coordinates, type: "MultiLineString" };
-})();
+};
 
 const subscribeToReducedMotion = (onChange: () => void) => {
   const query = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -129,7 +94,9 @@ const usePrefersReducedMotion = () =>
 const clampTilt = (phi: number) =>
   Math.max(-MAX_TILT_DEG, Math.min(MAX_TILT_DEG, phi));
 
-export const ActivityMap = () => {
+export const ActivityMap = ({ alerts }: { alerts: ActivityAlert[] }) => {
+  const markers = destinationMarkers(alerts);
+  const routeArcs = routeArcsFromMarkers(markers);
   const [rotation, setRotation] = useState<[number, number]>([-80, -20]);
   const [dragging, setDragging] = useState(false);
   const [hovering, setHovering] = useState(false);
@@ -299,13 +266,14 @@ export const ActivityMap = () => {
             </svg>
           </button>
           {visibleMarkers.map(({ marker, x, y }) => {
-            const alerts = mockAlerts
+            const destinationAlerts = alerts
               .filter((alert) => alert.destination === marker.destination)
               .toSorted(
                 (a, b) => severityRank[b.severity] - severityRank[a.severity]
               );
-            const shownAlerts = alerts.slice(0, MAX_DETAIL_ALERTS);
-            const hiddenAlertCount = alerts.length - shownAlerts.length;
+            const shownAlerts = destinationAlerts.slice(0, MAX_DETAIL_ALERTS);
+            const hiddenAlertCount =
+              destinationAlerts.length - shownAlerts.length;
             return (
               <HoverCard
                 key={marker.destination}
@@ -385,7 +353,7 @@ export const ActivityMap = () => {
                             rel="noopener"
                             target="_blank"
                           >
-                            {new URL(alert.source).hostname}
+                            {sourceHostname(alert.source)}
                           </Link>
                         </li>
                       ))}

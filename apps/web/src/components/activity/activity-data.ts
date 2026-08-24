@@ -56,118 +56,105 @@ export const statusLabels: Record<AlertStatus, string> = {
   superseded: "Superseded",
 };
 
-export const mockAlerts: ActivityAlert[] = [
-  {
-    category: "weather",
-    countryCode: "JP",
-    destination: "Osaka, Japan",
-    detectedAt: "2026-08-20T22:15:00Z",
-    id: "alert-001",
-    latitude: 34.69,
-    longitude: 135.5,
-    severity: "critical",
-    source: "https://www.jma.go.jp/bosai/warning/",
-    status: "active",
-    summary:
-      "Typhoon Ampil approaching Kansai region with landfall expected within 48 hours. Rail suspensions and flight cancellations likely.",
-  },
-  {
-    category: "transit",
-    countryCode: "FR",
-    destination: "Paris, France",
-    detectedAt: "2026-08-20T09:40:00Z",
-    id: "alert-002",
-    latitude: 48.86,
-    longitude: 2.35,
-    severity: "high",
-    source: "https://www.ratp.fr/en/traffic-info",
-    status: "active",
-    summary:
-      "Metro union strike announced for 25–27 August. RER B service to CDG airport expected to run at reduced frequency.",
-  },
-  {
-    category: "safety",
-    countryCode: "TH",
-    destination: "Bangkok, Thailand",
-    detectedAt: "2026-08-19T14:05:00Z",
-    id: "alert-003",
-    latitude: 13.76,
-    longitude: 100.5,
-    severity: "medium",
-    source:
-      "https://travel.state.gov/en/international-travel/travel-advisories.html",
-    status: "active",
-    summary:
-      "Pickpocket hotspots reported around Khao San Road during festival week. Standard precautions advised.",
-  },
-  {
-    category: "health",
-    countryCode: "ID",
-    destination: "Bali, Indonesia",
-    detectedAt: "2026-08-18T08:30:00Z",
-    id: "alert-004",
-    latitude: -8.65,
-    longitude: 115.22,
-    severity: "medium",
-    source: "https://www.who.int/emergencies/disease-outbreak-news",
-    status: "active",
-    summary:
-      "Dengue cases rising in Denpasar area. Health authority recommends repellent use and eliminating standing water.",
-  },
-  {
-    category: "political",
-    countryCode: "TH",
-    destination: "Bangkok, Thailand",
-    detectedAt: "2026-08-17T11:20:00Z",
-    id: "alert-005",
-    latitude: 13.76,
-    longitude: 100.5,
-    severity: "high",
-    source: "https://www.reuters.com/world/asia-pacific/",
-    status: "superseded",
-    summary:
-      "Planned demonstrations near government district on 24 August. Avoid protest areas; expect road closures.",
-  },
-  {
-    category: "weather",
-    countryCode: "CH",
-    destination: "Zurich, Switzerland",
-    detectedAt: "2026-08-16T16:45:00Z",
-    id: "alert-006",
-    latitude: 47.37,
-    longitude: 8.54,
-    severity: "low",
-    source: "https://www.meteoswiss.admin.ch/",
-    status: "resolved",
-    summary:
-      "Heat advisory extended through the weekend. Temperatures expected near 36°C in lowland areas.",
-  },
-  {
-    category: "transit",
-    countryCode: "JP",
-    destination: "Osaka, Japan",
-    detectedAt: "2026-08-21T03:10:00Z",
-    id: "alert-007",
-    latitude: 34.69,
-    longitude: 135.5,
-    severity: "critical",
-    source: "https://www.kansai-airport.com/en/news",
-    status: "active",
-    summary:
-      "KIX airport confirmed 34 cancellations ahead of typhoon landfall. Rebooking window opened for affected routes.",
-  },
-  {
-    category: "safety",
-    countryCode: "CH",
-    destination: "Zurich, Switzerland",
-    detectedAt: "2026-08-15T10:00:00Z",
-    id: "alert-008",
-    latitude: 47.37,
-    longitude: 8.54,
-    severity: "low",
-    source: "https://www.eda.admin.ch/travel-advice",
-    status: "resolved",
-    summary:
-      "No current advisories found for Zurich. Routine monitoring continues.",
-  },
-];
+const isAlertCategory = (value: string): value is AlertCategory =>
+  Object.hasOwn(categoryLabels, value);
+
+const isAlertSeverity = (value: string): value is AlertSeverity =>
+  Object.hasOwn(severityLabels, value);
+
+const isAlertStatus = (value: string): value is AlertStatus =>
+  Object.hasOwn(statusLabels, value);
+
+export const toActivityAlerts = (
+  rows: readonly {
+    category: string;
+    countryCode: string;
+    destination: string;
+    detectedAt: string;
+    id: string;
+    latitude: number;
+    longitude: number;
+    severity: string;
+    source: string;
+    status: string;
+    summary: string;
+  }[]
+): ActivityAlert[] =>
+  rows.flatMap((row) => {
+    if (
+      !(
+        isAlertCategory(row.category) &&
+        isAlertSeverity(row.severity) &&
+        isAlertStatus(row.status)
+      )
+    ) {
+      return [];
+    }
+    return [
+      {
+        category: row.category,
+        countryCode: row.countryCode,
+        destination: row.destination,
+        detectedAt: row.detectedAt,
+        id: row.id,
+        latitude: row.latitude,
+        longitude: row.longitude,
+        severity: row.severity,
+        source: row.source,
+        status: row.status,
+        summary: row.summary,
+      },
+    ];
+  });
+
+export const sourceHostname = (source: string): string => {
+  try {
+    return new URL(source).hostname;
+  } catch {
+    return source;
+  }
+};
+
+export interface DestinationMarker {
+  activeCount: number;
+  alertCount: number;
+  countryCode: string;
+  destination: string;
+  firstSeenAt: string;
+  latitude: number;
+  longitude: number;
+  worstSeverity: AlertSeverity;
+}
+
+export const destinationMarkers = (
+  alerts: readonly ActivityAlert[]
+): DestinationMarker[] => {
+  const byDestination = new Map<string, DestinationMarker>();
+  for (const alert of alerts) {
+    const existing = byDestination.get(alert.destination);
+    if (!existing) {
+      byDestination.set(alert.destination, {
+        activeCount: alert.status === "active" ? 1 : 0,
+        alertCount: 1,
+        countryCode: alert.countryCode,
+        destination: alert.destination,
+        firstSeenAt: alert.detectedAt,
+        latitude: alert.latitude,
+        longitude: alert.longitude,
+        worstSeverity: alert.severity,
+      });
+      continue;
+    }
+    existing.alertCount += 1;
+    if (alert.status === "active") {
+      existing.activeCount += 1;
+    }
+    if (alert.detectedAt < existing.firstSeenAt) {
+      existing.firstSeenAt = alert.detectedAt;
+    }
+    if (severityRank[alert.severity] > severityRank[existing.worstSeverity]) {
+      existing.worstSeverity = alert.severity;
+    }
+  }
+  return [...byDestination.values()];
+};

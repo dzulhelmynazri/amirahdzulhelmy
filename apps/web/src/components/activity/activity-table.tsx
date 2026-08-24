@@ -48,9 +48,9 @@ import { useMemo, useState } from "react";
 
 import {
   categoryLabels,
-  mockAlerts,
   severityLabels,
   severityRank,
+  sourceHostname,
   statusLabels,
 } from "./activity-data";
 import type {
@@ -151,7 +151,7 @@ const columns = columnHelper.columns([
   columnHelper.display({
     cell: (info) => {
       const alert = info.row.original;
-      const url = new URL(alert.source);
+      const hostname = sourceHostname(alert.source);
       return (
         <HoverCard>
           <HoverCardTrigger
@@ -169,7 +169,7 @@ const columns = columnHelper.columns([
           </HoverCardTrigger>
           <HoverCardContent>
             <div className="flex flex-col gap-2">
-              <p className="font-medium">{url.hostname}</p>
+              <p className="font-medium">{hostname}</p>
               <p className="break-all text-muted-foreground">{alert.source}</p>
             </div>
           </HoverCardContent>
@@ -200,7 +200,7 @@ const SortIcon = ({ isSorted }: { isSorted: false | "asc" | "desc" }) => {
   return <ArrowUpDown data-icon="inline-end" />;
 };
 
-export const ActivityTable = () => {
+export const ActivityTable = ({ alerts }: { alerts: ActivityAlert[] }) => {
   const [categoryFilter, setCategoryFilter] = useState<AlertCategory | "all">(
     "all"
   );
@@ -211,7 +211,7 @@ export const ActivityTable = () => {
 
   const filteredAlerts = useMemo(() => {
     const query = globalFilter.trim().toLowerCase();
-    return mockAlerts.filter((alert) => {
+    return alerts.filter((alert) => {
       const matchesCategory =
         categoryFilter === "all" || alert.category === categoryFilter;
       const matchesQuery =
@@ -220,7 +220,7 @@ export const ActivityTable = () => {
         alert.summary.toLowerCase().includes(query);
       return matchesCategory && matchesQuery;
     });
-  }, [categoryFilter, globalFilter]);
+  }, [alerts, categoryFilter, globalFilter]);
 
   const table = useTable({
     columns,
@@ -308,7 +308,9 @@ export const ActivityTable = () => {
                         </EmptyMedia>
                         <EmptyTitle>No alerts found</EmptyTitle>
                         <EmptyDescription>
-                          Try adjusting your search or filters.
+                          {alerts.length === 0
+                            ? "Travel Sentinel posts destination alerts here after each scan."
+                            : "Try adjusting your search or filters."}
                         </EmptyDescription>
                       </EmptyHeader>
                     </Empty>
@@ -331,7 +333,7 @@ export const ActivityTable = () => {
       </div>
 
       <p className="text-sm text-muted-foreground">
-        {rows.length} of {mockAlerts.length} alerts
+        {rows.length} of {alerts.length} alerts
       </p>
     </div>
   );
