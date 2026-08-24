@@ -1,14 +1,14 @@
-"use client";
-
-import { Pencil, Users } from "lucide-react";
+import {
+  Card,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@atlas/ui/components/card";
+import { formatShortDate } from "@atlas/utils/date";
+import { Users } from "lucide-react";
 
 import { useFareSearch } from "./fare-search-context";
 import { cabinLabels } from "./fares-data";
-
-const dateFormatter = new Intl.DateTimeFormat("en-GB", {
-  day: "numeric",
-  month: "short",
-});
 
 /**
  * The search card once a search has run.
@@ -25,44 +25,46 @@ export const FareSearchBar = ({ onEdit }: { onEdit: () => void }) => {
 
   const dates = [departure, returnDate]
     .filter((date): date is Date => date !== undefined)
-    .map((date) => dateFormatter.format(date))
+    .map((date) => formatShortDate(date))
     .join(" – ");
 
   return (
-    <button
-      className="flex w-full flex-wrap items-center gap-x-3 gap-y-1 rounded-2xl border bg-card px-4 py-3 text-left transition-colors hover:bg-muted/40"
-      onClick={onEdit}
-      type="button"
+    <Card
+      className="relative w-full cursor-pointer hover:bg-muted/40 has-[:focus-visible]:ring-3 has-[:focus-visible]:ring-ring/50"
+      size="sm"
     >
-      <span className="font-semibold">
-        {origin?.code} → {destination?.code}
-      </span>
-
-      <span aria-hidden="true" className="text-muted-foreground">
-        ·
-      </span>
-      <span className="text-muted-foreground text-sm">{dates}</span>
-
-      <span aria-hidden="true" className="text-muted-foreground">
-        ·
-      </span>
-      <span className="inline-flex items-center gap-1 text-muted-foreground text-sm">
-        <Users className="size-3.5" />
-        {passengers}
-      </span>
-
-      <span aria-hidden="true" className="text-muted-foreground">
-        ·
-      </span>
-      <span className="text-muted-foreground text-sm">
-        {cabinLabels[cabin]}
-      </span>
-
-      <span className="ml-auto inline-flex items-center gap-1.5 text-muted-foreground text-sm">
-        <Pencil className="size-3.5" />
-        Edit
-      </span>
-    </button>
+      <CardHeader className="flex flex-row flex-wrap items-center gap-x-3">
+        <CardTitle>
+          {origin?.code} → {destination?.code}
+        </CardTitle>
+        <span
+          aria-hidden="true"
+          className="size-1 shrink-0 rounded-full bg-muted-foreground"
+        />
+        <CardDescription className="flex flex-wrap items-center gap-x-3">
+          <span>{dates}</span>
+          <span
+            aria-hidden="true"
+            className="size-1 shrink-0 rounded-full bg-muted-foreground"
+          />
+          <span className="inline-flex items-center gap-1 [&_svg]:size-3.5">
+            <Users />
+            {passengers}
+          </span>
+          <span
+            aria-hidden="true"
+            className="size-1 shrink-0 rounded-full bg-muted-foreground"
+          />
+          <span>{cabinLabels[cabin]}</span>
+        </CardDescription>
+      </CardHeader>
+      <button
+        aria-label="Edit search"
+        className="absolute inset-0 size-full cursor-pointer opacity-0"
+        onClick={onEdit}
+        type="button"
+      />
+    </Card>
   );
 };
 

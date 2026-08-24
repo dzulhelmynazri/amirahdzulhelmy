@@ -9,16 +9,19 @@ import { FareSearchForm } from "./fare-search-form";
 /**
  * Decides whether the search shows as a full card or a summary bar.
  *
- * Collapsed by default once results exist, because at that point the form is
- * finished work occupying the top of the page. Expanding is a deliberate act
- * ("Edit"), and running a new search folds it away again.
+ * Collapsed by default once results exist — and while a search is in flight —
+ * because the form is finished work occupying the top of the page. Expanding
+ * is a deliberate act ("Edit"), and running a new search folds it away again.
  */
 export const FareSearchPanel = () => {
-  const { isSearching } = useFareSearch();
+  const { isSearching, search } = useFareSearch();
   const collapsible = useIsSearchCollapsible();
   const [isEditing, setIsEditing] = useState(false);
 
-  const showBar = collapsible && !(isEditing || isSearching);
+  const showBar =
+    !isEditing &&
+    (collapsible ||
+      (isSearching && Boolean(search.origin && search.destination)));
 
   if (showBar) {
     return <FareSearchBar onEdit={() => setIsEditing(true)} />;

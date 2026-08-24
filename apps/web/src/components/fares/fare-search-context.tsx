@@ -4,18 +4,40 @@ import type { AppRouter } from "@atlas/api/routers/index";
 import type { NormalizedFare } from "@atlas/atlas-client/fare-compare/types";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { inferRouterOutputs } from "@trpc/server";
-import { createContext, use, useCallback, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useQueryStates } from "nuqs";
+import type { inferParserType } from "nuqs";
+import {
+  createContext,
+  use,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import type { ReactNode } from "react";
 
 import { trpc } from "@/utils/trpc";
 
-import { airportByCode, displayCurrency, minPassengers } from "./fares-data";
+import {
+  FARE_SEARCH_PATH,
+  fareSearchParams,
+  parseLocalDate,
+  serializeFareSearch,
+  toIsoDate,
+} from "./fare-search-params";
+import {
+  airportByCode,
+  displayCurrency,
+  maxPassengers,
+  minPassengers,
+} from "./fares-data";
 import type { Airport, CabinClass, FareDeal, TripType } from "./fares-data";
 
 /**
  * Holds the fare search criteria so the search form and the deal cards can
- * share it: picking a deal fills the form in above rather than navigating
- * away, which is the only sensible affordance until fare results exist.
+ * share it. On `/fares` the form is local; submitting navigates to
+ * `/fares/search` with nuqs params. That page hydrates from the URL and fetches.
  */
 export interface FareSearch {
   cabin: CabinClass;
@@ -49,7 +71,7 @@ interface FareSearchContextValue {
   applyDeal: (deal: FareDeal) => void;
   /** Refills the form from a past search and runs it. */
   applyRecentSearch: (recent: RecentSearch) => void;
-  /** Drops the results and returns to the browse view, keeping the criteria. */
+  /** Leaves results and returns to the compose form on `/fares`. */
   backToBrowse: () => void;
   /** Names the fields still blocking a search, for the button hint. */
   blockingFields: string[];
@@ -79,24 +101,98 @@ const defaultResults: FareResultsState = { fares: [], hasSearched: false };
 
 const FareSearchContext = createContext<FareSearchContextValue | null>(null);
 
-/** Atlas wants `YYYY-MM-DD` here; the router compacts it to `YYYYMMDD`. */
-const toIsoDate = (date: Date) => {
-  const month = `${date.getMonth() + 1}`.padStart(2, "0");
-  const day = `${date.getDate()}`.padStart(2, "0");
-  return `${date.getFullYear()}-${month}-${day}`;
-};
+const clampPassengers = (value: number) =>
+  Math.min(maxPassengers, Math.max(minPassengers, value));
 
-/** Parses an ISO `YYYY-MM-DD` string as a local-midnight date. */
-const parseDealDate = (value: string) => {
-  const [year, month, day] = value.split("-").map(Number);
-  return new Date(year, month - 1, day);
-};
+const isSearchComplete = (search: FareSearch) =>
+  Boolean(
+    search.origin &&
+    search.destination &&
+    search.departure &&
+    (search.tripType !== "round-trip" || search.returnDate)
+  );
 
-export const FareSearchProvider = ({ children }: { children: ReactNode }) => {
+type FareSearchParams = inferParserType<typeof fareSearchParams>;
+
+const searchFromParams = (params: FareSearchParams): FareSearch => ({
+  cabin: params.cabin,
+  departure: params.departure ?? undefined,
+  destination: params.destination
+    ? (airportByCode.get(params.destination) ?? null)
+    : null,
+  origin: params.origin ? (airportByCode.get(params.origin) ?? null) : null,
+  passengers: clampPassengers(params.adults),
+  returnDate: params.returnDate ?? undefined,
+  tripType: params.trip,
+});
+
+const paramsFromSearch = (search: FareSearch): FareSearchParams => ({
+  adults: search.passengers,
+  cabin: search.cabin,
+  departure: search.departure ?? null,
+  destination: search.destination?.code ?? null,
+  origin: search.origin?.code ?? null,
+  returnDate:
+    search.tripType === "round-trip" ? (search.returnDate ?? null) : null,
+  trip: search.tripType,
+});
+
+const resultsFromOutcome = (
+  searchedRoute: string,
+  outcome: {
+    error?: string;
+    fares: NormalizedFare[];
+    nearbyDates?: string[];
+    noResultMessage?: string;
+    requestId?: string;
+    searchId?: string;
+  }
+): FareResultsState => ({
+  fares: outcome.fares,
+  hasSearched: true,
+  searchedRoute,
+  ...(outcome.error === undefined ? {} : { error: outcome.error }),
+  ...(outcome.nearbyDates === undefined
+    ? {}
+    : { nearbyDates: outcome.nearbyDates }),
+  ...(outcome.noResultMessage === undefined
+    ? {}
+    : { noResultMessage: outcome.noResultMessage }),
+  ...(outcome.requestId === undefined ? {} : { requestId: outcome.requestId }),
+  ...(outcome.searchId === undefined ? {} : { searchId: outcome.searchId }),
+});
+
+export const FareSearchProvider = ({
+  children,
+  source,
+}: {
+  children: ReactNode;
+  /** `form` is `/fares`; `url` is `/fares/search`. */
+  source: "form" | "url";
+}) => {
+  const router = useRouter();
   const queryClient = useQueryClient();
-  const [search, setSearch] = useState<FareSearch>(defaultSearch);
-  const [results, setResults] = useState<FareResultsState>(defaultResults);
-  const [isSearching, setIsSearching] = useState(false);
+  const [urlParams, setUrlParams] = useQueryStates(fareSearchParams, {
+    history: "push",
+  });
+  const committed = searchFromParams(urlParams);
+  const urlKey = serializeFareSearch(urlParams);
+
+  const [formSearch, setFormSearch] = useState(defaultSearch);
+  const [urlDraft, setUrlDraft] = useState<FareSearch | null>(null);
+  const [seenUrlKey, setSeenUrlKey] = useState(urlKey);
+
+  if (source === "url" && seenUrlKey !== urlKey) {
+    setSeenUrlKey(urlKey);
+    setUrlDraft(null);
+  }
+
+  const search = source === "url" ? (urlDraft ?? committed) : formSearch;
+
+  const [results, setResults] = useState<FareResultsState>(() =>
+    source === "url" ? { fares: [], hasSearched: true } : defaultResults
+  );
+  const [fetchedKey, setFetchedKey] = useState<string | null>(null);
 
   const { mutateAsync } = useMutation(
     trpc.fare.search.mutationOptions({
@@ -111,104 +207,76 @@ export const FareSearchProvider = ({ children }: { children: ReactNode }) => {
     })
   );
 
-  const update = useCallback((patch: Partial<FareSearch>) => {
-    setSearch((previous) => ({ ...previous, ...patch }));
-  }, []);
-
-  const swapAirports = useCallback(() => {
-    setSearch((previous) => ({
-      ...previous,
-      destination: previous.origin,
-      origin: previous.destination,
-    }));
-  }, []);
-
-  const applyDeal = useCallback((deal: FareDeal) => {
-    setSearch((previous) => ({
-      ...previous,
-      departure: parseDealDate(deal.departureDate),
-      destination: airportByCode.get(deal.destinationCode) ?? null,
-      origin: airportByCode.get(deal.originCode) ?? null,
-      returnDate: parseDealDate(deal.returnDate),
-      tripType: "round-trip",
-    }));
-  }, []);
-
-  const reset = useCallback(() => {
-    setSearch(defaultSearch);
-    setResults(defaultResults);
-  }, []);
-
-  // Distinct from reset: the criteria stay in the form so the traveller can
-  // tweak one field and search again, but the page returns to browse.
-  const backToBrowse = useCallback(() => {
-    setResults(defaultResults);
-  }, []);
-
-  const runSearch = useCallback(
-    (overrides?: Partial<FareSearch>) => {
-      const criteria = { ...search, ...overrides };
-      const { cabin, departure, destination, origin, passengers, returnDate } =
-        criteria;
-
-      if (!(origin && destination && departure)) {
+  const update = useCallback(
+    (patch: Partial<FareSearch>) => {
+      if (source === "url") {
+        setUrlDraft((previous) => ({
+          ...(previous ?? committed),
+          ...patch,
+        }));
         return;
       }
 
-      const searchedRoute = `${origin.city} → ${destination.city}`;
-
-      setIsSearching(true);
-
-      void (async () => {
-        try {
-          const outcome = await mutateAsync({
-            adults: passengers,
-            cabin,
-            children: 0,
-            currency: displayCurrency,
-            departureDate: toIsoDate(departure),
-            destination: destination.code,
-            infants: 0,
-            origin: origin.code,
-            ...(returnDate === undefined
-              ? {}
-              : { returnDate: toIsoDate(returnDate) }),
-          });
-
-          setResults({
-            fares: outcome.fares,
-            hasSearched: true,
-            searchedRoute,
-            ...(outcome.error === undefined ? {} : { error: outcome.error }),
-            ...(outcome.nearbyDates === undefined
-              ? {}
-              : { nearbyDates: outcome.nearbyDates }),
-            ...(outcome.noResultMessage === undefined
-              ? {}
-              : { noResultMessage: outcome.noResultMessage }),
-            ...(outcome.requestId === undefined
-              ? {}
-              : { requestId: outcome.requestId }),
-            ...(outcome.searchId === undefined
-              ? {}
-              : { searchId: outcome.searchId }),
-          });
-        } catch (error: unknown) {
-          setResults({
-            error:
-              error instanceof Error
-                ? error.message
-                : "We could not fetch fares right now. Please try again.",
-            fares: [],
-            hasSearched: true,
-            searchedRoute,
-          });
-        } finally {
-          setIsSearching(false);
-        }
-      })();
+      setFormSearch((previous) => ({ ...previous, ...patch }));
     },
-    [mutateAsync, search]
+    [committed, source]
+  );
+
+  const swapAirports = useCallback(() => {
+    update({ destination: search.origin, origin: search.destination });
+  }, [search.destination, search.origin, update]);
+
+  const applyDeal = useCallback(
+    (deal: FareDeal) => {
+      update({
+        departure: parseLocalDate(deal.departureDate) ?? undefined,
+        destination: airportByCode.get(deal.destinationCode) ?? null,
+        origin: airportByCode.get(deal.originCode) ?? null,
+        returnDate: parseLocalDate(deal.returnDate) ?? undefined,
+        tripType: "round-trip",
+      });
+    },
+    [update]
+  );
+
+  const reset = useCallback(() => {
+    if (source === "url") {
+      router.push("/fares");
+      return;
+    }
+
+    setFormSearch(defaultSearch);
+    setResults(defaultResults);
+  }, [router, source]);
+
+  const backToBrowse = useCallback(() => {
+    router.push("/fares");
+  }, [router]);
+
+  const commitSearch = useCallback(
+    (criteria: FareSearch) => {
+      if (!isSearchComplete(criteria)) {
+        return;
+      }
+
+      const params = paramsFromSearch(criteria);
+
+      if (source === "form") {
+        router.push(serializeFareSearch(FARE_SEARCH_PATH, params));
+        return;
+      }
+
+      setUrlDraft(null);
+      void setUrlParams(params);
+    },
+    [router, setUrlParams, source]
+  );
+
+  const runSearch = useCallback(
+    (overrides?: Partial<FareSearch>) => {
+      commitSearch({ ...search, ...overrides });
+    },
+    [commitSearch, search]
   );
 
   /**
@@ -217,16 +285,15 @@ export const FareSearchProvider = ({ children }: { children: ReactNode }) => {
    */
   const searchOnDate = useCallback(
     (isoDate: string) => {
-      const departure = parseDealDate(isoDate);
-      setSearch((previous) => ({
-        ...previous,
+      const departure = parseLocalDate(isoDate) ?? undefined;
+      commitSearch({
+        ...search,
         departure,
         returnDate: undefined,
         tripType: "one-way",
-      }));
-      runSearch({ departure, returnDate: undefined, tripType: "one-way" });
+      });
     },
-    [runSearch]
+    [commitSearch, search]
   );
 
   // Named so the CTA can say what is missing instead of just being disabled.
@@ -249,24 +316,86 @@ export const FareSearchProvider = ({ children }: { children: ReactNode }) => {
 
   const applyRecentSearch = useCallback(
     (recent: RecentSearch) => {
-      const criteria: Partial<FareSearch> = {
+      commitSearch({
         cabin: (recent.cabin as CabinClass) ?? "economy",
-        departure: parseDealDate(recent.departureDate),
+        departure: parseLocalDate(recent.departureDate) ?? undefined,
         destination: airportByCode.get(recent.destination) ?? null,
         origin: airportByCode.get(recent.origin) ?? null,
         passengers: recent.adults,
         returnDate:
           recent.returnDate === null
             ? undefined
-            : parseDealDate(recent.returnDate),
+            : (parseLocalDate(recent.returnDate) ?? undefined),
         tripType: recent.returnDate === null ? "one-way" : "round-trip",
-      };
-
-      setSearch((previous) => ({ ...previous, ...criteria }));
-      runSearch(criteria);
+      });
     },
-    [runSearch]
+    [commitSearch]
   );
+
+  useEffect(() => {
+    if (source !== "url") {
+      return;
+    }
+
+    const criteria = searchFromParams(urlParams);
+    const { cabin, departure, destination, origin, passengers, returnDate } =
+      criteria;
+
+    if (!(origin && destination && departure) || !isSearchComplete(criteria)) {
+      router.replace("/fares");
+      return;
+    }
+
+    const searchedRoute = `${origin.city} → ${destination.city}`;
+    const requestKey = urlKey;
+    let cancelled = false;
+
+    void (async () => {
+      try {
+        const outcome = await mutateAsync({
+          adults: passengers,
+          cabin,
+          children: 0,
+          currency: displayCurrency,
+          departureDate: toIsoDate(departure),
+          destination: destination.code,
+          infants: 0,
+          origin: origin.code,
+          ...(returnDate === undefined
+            ? {}
+            : { returnDate: toIsoDate(returnDate) }),
+        });
+
+        if (cancelled) {
+          return;
+        }
+
+        setResults(resultsFromOutcome(searchedRoute, outcome));
+      } catch (error: unknown) {
+        if (cancelled) {
+          return;
+        }
+
+        setResults({
+          error:
+            error instanceof Error
+              ? error.message
+              : "We could not fetch fares right now. Please try again.",
+          fares: [],
+          hasSearched: true,
+          searchedRoute,
+        });
+      } finally {
+        if (!cancelled) {
+          setFetchedKey(requestKey);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [mutateAsync, router, source, urlKey, urlParams]);
 
   const value = useMemo<FareSearchContextValue>(
     () => ({
@@ -274,7 +403,7 @@ export const FareSearchProvider = ({ children }: { children: ReactNode }) => {
       applyRecentSearch,
       backToBrowse,
       blockingFields,
-      isSearching,
+      isSearching: source === "url" && fetchedKey !== urlKey,
       reset,
       results,
       runSearch,
@@ -288,14 +417,16 @@ export const FareSearchProvider = ({ children }: { children: ReactNode }) => {
       applyRecentSearch,
       backToBrowse,
       blockingFields,
-      isSearching,
+      fetchedKey,
       reset,
       results,
       runSearch,
       search,
       searchOnDate,
+      source,
       swapAirports,
       update,
+      urlKey,
     ]
   );
 

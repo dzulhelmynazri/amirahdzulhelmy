@@ -10,6 +10,10 @@ export const HeaderTitle = () => {
     return <h1 className="text-sm font-medium">Trips</h1>;
   }
 
+  if (segments[0] === "fares") {
+    return <h1 className="text-sm font-medium">Fares</h1>;
+  }
+
   const segment = segments.at(-1) || "Dashboard";
   const title = segment.charAt(0).toUpperCase() + segment.slice(1);
 

@@ -13,7 +13,13 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@atlas/ui/components/empty";
-import { Skeleton } from "@atlas/ui/components/skeleton";
+import { Separator } from "@atlas/ui/components/separator";
+import { Spinner } from "@atlas/ui/components/spinner";
+import { Toggle } from "@atlas/ui/components/toggle";
+import {
+  ToggleGroup,
+  ToggleGroupItem,
+} from "@atlas/ui/components/toggle-group";
 import { cn } from "@atlas/ui/lib/utils";
 import { formatWeekdayDate } from "@atlas/utils/date";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -26,7 +32,6 @@ import {
   ChevronRight,
   Luggage,
   SearchX,
-  Sparkles,
   TriangleAlert,
 } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -39,7 +44,6 @@ import { useFareSearch } from "./fare-search-context";
 import { airlines } from "./fares-data";
 
 const MINUTES_PER_HOUR = 60;
-const SKELETON_ROWS = ["a", "b", "c"];
 
 type SortKey = "cheapest" | "earliest" | "fastest";
 
@@ -151,15 +155,13 @@ const BookWithAgentButton = ({ fare }: { fare: NormalizedFare }) => {
 
   return (
     <Button
-      className="rounded-full"
       disabled={!fare.sellable}
       onClick={() => handOffToAgent(buildHandoff(fare, search.passengers))}
       size="sm"
       title={fare.sellable ? undefined : fare.sellableReason}
       type="button"
     >
-      <Sparkles />
-      Book with agent
+      Book with Agent
     </Button>
   );
 };
@@ -365,12 +367,17 @@ const FareRow = ({
 );
 
 const LoadingState = () => (
-  <section className="flex flex-col gap-3">
-    <h3 className="font-semibold text-lg">Searching…</h3>
-    {SKELETON_ROWS.map((row) => (
-      <Skeleton className="h-20 rounded-2xl" key={row} />
-    ))}
-  </section>
+  <Empty className="flex-1">
+    <EmptyHeader>
+      <EmptyMedia variant="icon">
+        <Spinner />
+      </EmptyMedia>
+      <EmptyTitle>Searching Atlas…</EmptyTitle>
+      <EmptyDescription>
+        Comparing live prices from 140+ airlines.
+      </EmptyDescription>
+    </EmptyHeader>
+  </Empty>
 );
 
 const NoResultsState = () => {
@@ -421,7 +428,7 @@ const FilterBar = ({
   availableAirlines,
   nonStopOnly,
   onAirlineChange,
-  onSortCycle,
+  onSortChange,
   onToggleNonStop,
   sortKey,
 }: {
@@ -429,56 +436,65 @@ const FilterBar = ({
   availableAirlines: string[];
   nonStopOnly: boolean;
   onAirlineChange: (code: string | null) => void;
-  onSortCycle: () => void;
-  onToggleNonStop: () => void;
+  onSortChange: (sortKey: SortKey) => void;
+  onToggleNonStop: (pressed: boolean) => void;
   sortKey: SortKey;
 }) => (
-  <div className="flex flex-wrap items-center gap-2">
-    <Button
-      aria-pressed={airlineFilter === null}
-      className="rounded-full"
-      onClick={() => onAirlineChange(null)}
+  <div className="flex flex-wrap items-stretch gap-2">
+    <ToggleGroup
+      className="flex-wrap"
+      onValueChange={(next) => {
+        const [selected] = next;
+        if (selected === undefined || selected === "all") {
+          onAirlineChange(null);
+          return;
+        }
+        onAirlineChange(selected);
+      }}
       size="sm"
-      type="button"
-      variant={airlineFilter === null ? "secondary" : "outline"}
-    >
-      All airlines
-    </Button>
-    {availableAirlines.map((code) => (
-      <Button
-        aria-pressed={airlineFilter === code}
-        className="rounded-full"
-        key={code}
-        onClick={() => onAirlineChange(code)}
-        size="sm"
-        type="button"
-        variant={airlineFilter === code ? "secondary" : "outline"}
-      >
-        {airlineName(code)}
-      </Button>
-    ))}
-
-    <span aria-hidden="true" className="mx-1 h-5 w-px bg-border" />
-
-    <Button
-      aria-pressed={nonStopOnly}
-      className="rounded-full"
-      onClick={onToggleNonStop}
-      size="sm"
-      type="button"
-      variant={nonStopOnly ? "secondary" : "outline"}
-    >
-      Non-stop
-    </Button>
-    <Button
-      className="rounded-full"
-      onClick={onSortCycle}
-      size="sm"
-      type="button"
+      value={[airlineFilter ?? "all"]}
       variant="outline"
     >
-      Sort: {SORT_LABELS[sortKey]}
-    </Button>
+      <ToggleGroupItem value="all">All airlines</ToggleGroupItem>
+      {availableAirlines.map((code) => (
+        <ToggleGroupItem key={code} value={code}>
+          {airlineName(code)}
+        </ToggleGroupItem>
+      ))}
+    </ToggleGroup>
+
+    <Separator orientation="vertical" />
+
+    <Toggle
+      onPressedChange={onToggleNonStop}
+      pressed={nonStopOnly}
+      size="sm"
+      variant="outline"
+    >
+      Non-stop
+    </Toggle>
+
+    <ToggleGroup
+      onValueChange={(next) => {
+        const [selected] = next;
+        if (
+          selected === "cheapest" ||
+          selected === "earliest" ||
+          selected === "fastest"
+        ) {
+          onSortChange(selected);
+        }
+      }}
+      size="sm"
+      value={[sortKey]}
+      variant="outline"
+    >
+      {SORT_ORDER.map((key) => (
+        <ToggleGroupItem key={key} value={key}>
+          {SORT_LABELS[key]}
+        </ToggleGroupItem>
+      ))}
+    </ToggleGroup>
   </div>
 );
 
@@ -592,7 +608,7 @@ export const FareResults = () => {
           variant="ghost"
         >
           <ArrowLeft />
-          {showingReturns ? "Outbound flights" : "Back to browse"}
+          {showingReturns ? "Outbound flights" : "New search"}
         </Button>
 
         <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -622,15 +638,8 @@ export const FareResults = () => {
           availableAirlines={availableAirlines}
           nonStopOnly={nonStopOnly}
           onAirlineChange={setAirlineFilter}
-          onSortCycle={() =>
-            setSortKey(
-              (previous) =>
-                SORT_ORDER[
-                  (SORT_ORDER.indexOf(previous) + 1) % SORT_ORDER.length
-                ] ?? "cheapest"
-            )
-          }
-          onToggleNonStop={() => setNonStopOnly((previous) => !previous)}
+          onSortChange={setSortKey}
+          onToggleNonStop={setNonStopOnly}
           sortKey={sortKey}
         />
       )}
