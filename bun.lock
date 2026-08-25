@@ -202,6 +202,7 @@
         "@tailwindcss/postcss": "catalog:",
         "@tanstack/react-query-devtools": "^5.101.4",
         "@types/d3-geo": "^3.1.1",
+        "@types/geojson": "^7946.0.16",
         "@types/node": "^20.19.43",
         "@types/react": "catalog:",
         "@types/react-dom": "catalog:",
