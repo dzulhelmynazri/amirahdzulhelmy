@@ -42,7 +42,8 @@
     "check": "ultracite check",
     "env:link": "bash scripts/link-env.sh",
     "fix": "ultracite fix",
-    "prepare": "husky"
+    "prepare": "husky",
+    "test": "turbo test"
   },
   "dependencies": {
     "@atlas/env": "workspace:*",
