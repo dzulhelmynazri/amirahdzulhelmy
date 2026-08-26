@@ -1,3 +1,4 @@
+import { Markdown } from "@atlas/ui/components/agents/markdown";
 import { EASE_OUT, SPRING_LAYOUT } from "@atlas/ui/lib/ease";
 import { cn } from "@atlas/ui/lib/utils";
 import {
@@ -71,7 +72,17 @@ function StepRow({ item }: { item: AgentActivityStep }) {
 function TextRow({ item }: { item: AgentActivityText }) {
   return (
     <div className="rounded-md px-1.5 py-1 leading-5 text-muted-foreground">
-      {item.content}
+      {/*
+        Reasoning is Markdown like any other model output, and shown raw it
+        put literal ** on screen inside the thinking panel. Static rather than
+        streaming: this text is already inside a scrolling viewport, and
+        re-parsing incomplete spans on every token there buys nothing.
+      */}
+      {typeof item.content === "string" ? (
+        <Markdown>{item.content}</Markdown>
+      ) : (
+        item.content
+      )}
     </div>
   );
 }
