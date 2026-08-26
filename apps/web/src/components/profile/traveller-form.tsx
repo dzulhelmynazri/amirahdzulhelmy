@@ -15,7 +15,7 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 
-import type { TravellerInput } from "@/app/actions/travellers";
+import type { TravellerField, TravellerInput } from "@/app/actions/travellers";
 import { saveTraveller } from "@/app/actions/travellers";
 import {
   CountryCombobox,
@@ -46,6 +46,7 @@ export const emptyTraveller: TravellerInput = {
 };
 
 const Field = ({
+  error,
   hint,
   id,
   label,
@@ -53,24 +54,43 @@ const Field = ({
   placeholder,
   value,
 }: {
+  error?: string;
   hint?: string;
   id: string;
   label: string;
   onChange: (value: string) => void;
   placeholder?: string;
   value: string;
-}) => (
-  <div className="flex flex-col gap-1.5">
-    <Label htmlFor={id}>{label}</Label>
-    <Input
-      id={id}
-      onChange={(event) => onChange(event.target.value)}
-      placeholder={placeholder}
-      value={value}
-    />
-    {hint ? <p className="text-muted-foreground text-xs">{hint}</p> : null}
-  </div>
-);
+}) => {
+  // The error takes the description slot when present: a screen reader should
+  // hear why the field was rejected before it hears the general advice.
+  const hintId = hint ? `${id}-hint` : undefined;
+  const describedBy = error ? `${id}-error` : hintId;
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      <Label htmlFor={id}>{label}</Label>
+      <Input
+        aria-describedby={describedBy}
+        aria-invalid={error ? true : undefined}
+        id={id}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={placeholder}
+        value={value}
+      />
+      {error ? (
+        <p className="text-destructive text-xs" id={`${id}-error`}>
+          {error}
+        </p>
+      ) : null}
+      {hint && !error ? (
+        <p className="text-muted-foreground text-xs" id={`${id}-hint`}>
+          {hint}
+        </p>
+      ) : null}
+    </div>
+  );
+};
 
 /**
  * Add or edit one traveller.
@@ -81,11 +101,20 @@ const Field = ({
  */
 export const TravellerForm = ({ initial }: { initial: TravellerInput }) => {
   const [form, setForm] = useState<TravellerInput>(initial);
+  const [invalid, setInvalid] = useState<
+    { error: string; field?: TravellerField } | undefined
+  >();
   const [isSaving, startSaving] = useTransition();
   const router = useRouter();
 
-  const onChange = (patch: Partial<TravellerInput>) =>
+  const onChange = (patch: Partial<TravellerInput>) => {
+    // Clearing on edit, so a message never outlives the value it described.
+    setInvalid(undefined);
     setForm((previous) => ({ ...previous, ...patch }));
+  };
+
+  const errorFor = (field: TravellerField) =>
+    invalid?.field === field ? invalid.error : undefined;
 
   // A saved row always carries a server-minted id; a blank form never does.
   const isEditing = form.id !== undefined;
@@ -103,17 +132,31 @@ export const TravellerForm = ({ initial }: { initial: TravellerInput }) => {
       const result = await saveTraveller(form);
 
       if (result.error) {
-        toast.error(result.error);
+        setInvalid({ error: result.error, field: result.field });
+        // A failure with no field is not about anything on screen — a lost
+        // connection, say — so it needs the toast to be seen at all.
+        if (!result.field) {
+          toast.error(result.error);
+        }
         return;
       }
 
+      setInvalid(undefined);
       toast.success(isEditing ? "Changes saved" : "Traveller added");
       backToList();
     });
   };
 
   return (
-    <div className="flex flex-col gap-4">
+    <form
+      className="flex flex-col gap-4"
+      // A real form, so Enter submits, browsers offer autofill, and assistive
+      // tech announces a form landmark. It was a div with a click handler.
+      onSubmit={(event) => {
+        event.preventDefault();
+        handleSubmit();
+      }}
+    >
       <Button
         className="-ml-2 self-start text-muted-foreground"
         onClick={backToList}
@@ -143,6 +186,7 @@ export const TravellerForm = ({ initial }: { initial: TravellerInput }) => {
 
       <Field
         hint="Exactly as printed on the passport or IC. Airlines reject mismatches at check-in."
+        error={errorFor("name")}
         id="traveller-name"
         label="Full name"
         onChange={(name) => onChange({ name: name.toUpperCase() })}
@@ -152,6 +196,7 @@ export const TravellerForm = ({ initial }: { initial: TravellerInput }) => {
 
       <div className="grid gap-3 sm:grid-cols-2">
         <DateField
+          error={errorFor("birthday")}
           id="traveller-dob"
           label="Date of birth"
           onChange={(birthday) => onChange({ birthday })}
@@ -192,6 +237,7 @@ export const TravellerForm = ({ initial }: { initial: TravellerInput }) => {
           value={form.documentNumber ?? ""}
         />
         <DateField
+          error={errorFor("documentExpiry")}
           id="traveller-doc-expiry"
           label="Passport expiry"
           onChange={(documentExpiry) => onChange({ documentExpiry })}
@@ -203,6 +249,7 @@ export const TravellerForm = ({ initial }: { initial: TravellerInput }) => {
 
       <div className="grid gap-3 sm:grid-cols-2">
         <CountryCombobox
+          error={errorFor("nationality")}
           id="traveller-nationality"
           label="Nationality"
           onChange={(nationality) => onChange({ nationality })}
@@ -210,6 +257,7 @@ export const TravellerForm = ({ initial }: { initial: TravellerInput }) => {
         />
         <CountryCombobox
           hint="The country that issued the passport, not where it was collected."
+          error={errorFor("documentIssuePlace")}
           id="traveller-issue"
           label="Issuing country"
           onChange={(documentIssuePlace) => onChange({ documentIssuePlace })}
@@ -243,9 +291,9 @@ export const TravellerForm = ({ initial }: { initial: TravellerInput }) => {
         Book for this person by default
       </label>
 
-      <Button disabled={isSaving} onClick={handleSubmit} type="button">
+      <Button disabled={isSaving} type="submit">
         {isSaving ? "Saving…" : submitLabel}
       </Button>
-    </div>
+    </form>
   );
 };

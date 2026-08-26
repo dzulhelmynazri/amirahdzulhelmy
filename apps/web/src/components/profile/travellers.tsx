@@ -1,5 +1,16 @@
 "use client";
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@atlas/ui/components/alert-dialog";
 import { Badge } from "@atlas/ui/components/badge";
 import { Button } from "@atlas/ui/components/button";
 import {
@@ -142,16 +153,42 @@ const TravellerRowItem = ({
           >
             <Pencil />
           </Button>
-          <Button
-            aria-label={`Remove ${row.name}`}
-            disabled={isRemoving}
-            onClick={handleRemove}
-            size="icon-sm"
-            type="button"
-            variant="ghost"
-          >
-            <Trash2 />
-          </Button>
+          {/*
+            Confirmed, because this sits one tap from Edit and takes a
+            passport number with it. There is no undo and nothing to restore
+            from.
+          */}
+          <AlertDialog>
+            <AlertDialogTrigger
+              render={
+                <Button
+                  aria-label={`Remove ${row.name}`}
+                  disabled={isRemoving}
+                  size="icon-sm"
+                  type="button"
+                  variant="ghost"
+                >
+                  <Trash2 />
+                </Button>
+              }
+            />
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Remove {row.name}?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Their date of birth
+                  {row.documentNumber ? ", passport number" : ""} and contact
+                  details are deleted. Bookings already made are not affected.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Keep</AlertDialogCancel>
+                <AlertDialogAction onClick={handleRemove}>
+                  Remove traveller
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </div>
     </li>

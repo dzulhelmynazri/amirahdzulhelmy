@@ -45,6 +45,7 @@ const toIso = (date: Date): string =>
   ).padStart(2, "0")}`;
 
 export const DateField = ({
+  error,
   hint,
   id,
   label,
@@ -53,6 +54,7 @@ export const DateField = ({
   range,
   value,
 }: {
+  error?: string;
   hint?: string;
   id: string;
   label: string;
@@ -63,6 +65,8 @@ export const DateField = ({
   value: string;
 }) => {
   const [open, setOpen] = useState(false);
+  const hintId = hint ? `${id}-hint` : undefined;
+  const describedBy = error ? `${id}-error` : hintId;
   const selected = parseIso(value);
   const today = new Date();
 
@@ -78,6 +82,8 @@ export const DateField = ({
       <Label htmlFor={id}>{label}</Label>
       <div className="relative">
         <Input
+          aria-describedby={describedBy}
+          aria-invalid={error ? true : undefined}
           className="pr-10"
           id={id}
           onChange={(event) => onChange(event.target.value)}
@@ -116,7 +122,16 @@ export const DateField = ({
           </PopoverContent>
         </Popover>
       </div>
-      {hint ? <p className="text-muted-foreground text-xs">{hint}</p> : null}
+      {error ? (
+        <p className="text-destructive text-xs" id={`${id}-error`}>
+          {error}
+        </p>
+      ) : null}
+      {hint && !error ? (
+        <p className="text-muted-foreground text-xs" id={`${id}-hint`}>
+          {hint}
+        </p>
+      ) : null}
     </div>
   );
 };

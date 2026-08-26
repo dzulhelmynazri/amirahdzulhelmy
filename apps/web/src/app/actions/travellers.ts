@@ -29,8 +29,19 @@ export interface TravellerInput {
   phone?: string;
 }
 
+/** Which input a rejection belongs to, so the form can point at it. */
+export type TravellerField =
+  | "birthday"
+  | "documentExpiry"
+  | "documentIssuePlace"
+  | "gender"
+  | "name"
+  | "nationality";
+
 export interface TravellerResult {
   error?: string;
+  /** Absent when the failure was not about one field, e.g. a lost connection. */
+  field?: TravellerField;
   id?: string;
 }
 
@@ -44,29 +55,46 @@ const requireUserId = async (): Promise<string | undefined> => {
   return session?.user?.id;
 };
 
-const validate = (input: TravellerInput): string | undefined => {
+interface Invalid {
+  error: string;
+  field: TravellerField;
+}
+
+const validate = (input: TravellerInput): Invalid | undefined => {
   if (!NAME_PATTERN.test(input.name)) {
-    return "Name must be uppercase FAMILY/GIVEN, e.g. TAN/MEI LING.";
+    return {
+      error: "Name must be uppercase FAMILY/GIVEN, e.g. TAN/MEI LING.",
+      field: "name",
+    };
   }
   if (!ISO_DATE_PATTERN.test(input.birthday)) {
-    return "Date of birth must be YYYY-MM-DD.";
+    return { error: "Date of birth must be YYYY-MM-DD.", field: "birthday" };
   }
   if (input.gender !== "F" && input.gender !== "M") {
-    return "Gender must be F or M — the only values airlines accept here.";
+    return {
+      error: "Gender must be F or M — the only values airlines accept here.",
+      field: "gender",
+    };
   }
   if (
     input.documentExpiry !== undefined &&
     input.documentExpiry !== "" &&
     !ISO_DATE_PATTERN.test(input.documentExpiry)
   ) {
-    return "Document expiry must be YYYY-MM-DD.";
+    return {
+      error: "Passport expiry must be YYYY-MM-DD.",
+      field: "documentExpiry",
+    };
   }
-  for (const [label, value] of [
-    ["Nationality", input.nationality],
-    ["Issuing country", input.documentIssuePlace],
+  for (const [label, value, field] of [
+    ["Nationality", input.nationality, "nationality"],
+    ["Issuing country", input.documentIssuePlace, "documentIssuePlace"],
   ] as const) {
     if (value !== undefined && value !== "" && !ISO2_PATTERN.test(value)) {
-      return `${label} must be a 2-letter country code, e.g. MY.`;
+      return {
+        error: `${label} must be a 2-letter country code, e.g. MY.`,
+        field,
+      };
     }
   }
 };
@@ -133,7 +161,7 @@ export const saveTraveller = async (
   const invalid = validate(input);
 
   if (invalid) {
-    return { error: invalid };
+    return invalid;
   }
 
   const fields = {

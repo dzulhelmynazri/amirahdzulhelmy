@@ -40,12 +40,14 @@ const renderCountryItem = (country: Country) => (
 );
 
 export const CountryCombobox = ({
+  error,
   hint,
   id,
   label,
   onChange,
   value,
 }: {
+  error?: string;
   hint?: string;
   id: string;
   label: string;
@@ -53,6 +55,8 @@ export const CountryCombobox = ({
   value: string;
 }) => {
   const selected = findCountry(value) ?? null;
+  const hintId = hint ? `${id}-hint` : undefined;
+  const describedBy = error ? `${id}-error` : hintId;
 
   return (
     <div className="flex flex-col gap-1.5">
@@ -66,6 +70,8 @@ export const CountryCombobox = ({
         value={selected}
       >
         <ComboboxInput
+          aria-describedby={describedBy}
+          aria-invalid={error ? true : undefined}
           className="w-full"
           id={id}
           placeholder="Search country"
@@ -75,7 +81,16 @@ export const CountryCombobox = ({
           <ComboboxList>{renderCountryItem}</ComboboxList>
         </ComboboxContent>
       </Combobox>
-      {hint ? <p className="text-muted-foreground text-xs">{hint}</p> : null}
+      {error ? (
+        <p className="text-destructive text-xs" id={`${id}-error`}>
+          {error}
+        </p>
+      ) : null}
+      {hint && !error ? (
+        <p className="text-muted-foreground text-xs" id={`${id}-hint`}>
+          {hint}
+        </p>
+      ) : null}
     </div>
   );
 };
