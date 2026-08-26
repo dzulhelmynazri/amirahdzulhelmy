@@ -1,3 +1,5 @@
+"use client";
+
 import { Badge } from "@atlas/ui/components/badge";
 import { Button } from "@atlas/ui/components/button";
 import { Google } from "@atlas/ui/components/socials";
