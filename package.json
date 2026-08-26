@@ -43,7 +43,8 @@
     "env:link": "bash scripts/link-env.sh",
     "fix": "ultracite fix",
     "prepare": "husky",
-    "test": "turbo test"
+    "test": "turbo test",
+    "schedule": "bun run scripts/run-schedule.ts"
   },
   "dependencies": {
     "@atlas/env": "workspace:*",
