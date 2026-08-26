@@ -39,6 +39,25 @@ const parseIso = (value: string): Date | undefined => {
   return parsed.getMonth() === month - 1 ? parsed : undefined;
 };
 
+const YEARS_AHEAD = 15;
+
+/** The span of months the year dropdown may offer, for this kind of date. */
+const monthBounds = (range: "future" | "past") => {
+  const thisYear = new Date().getFullYear();
+
+  // Opening on the current month either way. The year dropdown is how someone
+  // reaches 1974; landing there by default would just be a long scroll back.
+  const opensAt = new Date(thisYear, new Date().getMonth());
+
+  return range === "past"
+    ? { end: new Date(thisYear, 11), opensAt, start: new Date(1900, 0) }
+    : {
+        end: new Date(thisYear + YEARS_AHEAD, 11),
+        opensAt,
+        start: new Date(thisYear, 0),
+      };
+};
+
 const toIso = (date: Date): string =>
   `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(
     date.getDate()
@@ -68,14 +87,11 @@ export const DateField = ({
   const hintId = hint ? `${id}-hint` : undefined;
   const describedBy = error ? `${id}-error` : hintId;
   const selected = parseIso(value);
-  const today = new Date();
 
-  const startMonth =
-    range === "past" ? new Date(1900, 0) : new Date(today.getFullYear(), 0);
-  const endMonth =
-    range === "past"
-      ? new Date(today.getFullYear(), 11)
-      : new Date(today.getFullYear() + 15, 11);
+  // Only once the picker opens. Reading the clock during render makes the
+  // whole page un-prerenderable for a value nothing needs until a calendar is
+  // actually on screen.
+  const bounds = open ? monthBounds(range) : undefined;
 
   return (
     <div className="flex flex-col gap-1.5">
@@ -107,8 +123,8 @@ export const DateField = ({
           <PopoverContent align="end" className="w-auto p-0">
             <Calendar
               captionLayout="dropdown"
-              defaultMonth={selected ?? (range === "past" ? undefined : today)}
-              endMonth={endMonth}
+              defaultMonth={selected ?? bounds?.opensAt}
+              endMonth={bounds?.end}
               mode="single"
               onSelect={(date) => {
                 if (date) {
@@ -117,7 +133,7 @@ export const DateField = ({
                 }
               }}
               selected={selected}
-              startMonth={startMonth}
+              startMonth={bounds?.start}
             />
           </PopoverContent>
         </Popover>

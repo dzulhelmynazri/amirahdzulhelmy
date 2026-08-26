@@ -8,7 +8,6 @@ import type {
   UseEveAgentHelpers,
   UseEveAgentStatus,
 } from "eve/react";
-import { usePathname } from "next/navigation";
 import {
   createContext,
   use,
@@ -161,8 +160,6 @@ const EveChatSession = ({
   children: ReactNode;
   saved: SavedEveChat;
 }) => {
-  const pathname = usePathname();
-
   const persistSnapshot = useCallback(
     (snapshot: {
       events: readonly MessageStreamEvent[];
@@ -199,7 +196,11 @@ const EveChatSession = ({
     },
     prepareSend: (input) => ({
       ...input,
-      clientContext: { route: pathname },
+      // Read at send time rather than through usePathname, which would make
+      // every page under this provider un-prerenderable for a value the
+      // render never uses. The agent only needs to know which page the
+      // traveller was on when they typed.
+      clientContext: { route: window.location.pathname },
     }),
   });
 

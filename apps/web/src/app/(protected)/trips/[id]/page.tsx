@@ -4,6 +4,7 @@ import { Separator } from "@atlas/ui/components/separator";
 import { Skeleton } from "@atlas/ui/components/skeleton";
 import { useQuery } from "@tanstack/react-query";
 import { useParams } from "next/navigation";
+import { Suspense } from "react";
 
 import TripsEditor from "@/components/editor/trips-editor";
 import { trpc } from "@/utils/trpc";
@@ -86,4 +87,20 @@ const TripPage = () => {
   );
 };
 
-export default TripPage;
+/**
+ * The editor reads its id from the URL, which is unknown at prerender. Wrapped
+ * so the skeleton ships as static HTML and only the editor waits.
+ */
+export default function TripRoute() {
+  return (
+    <Suspense
+      fallback={
+        <div className="h-full">
+          <TripEditorSkeleton />
+        </div>
+      }
+    >
+      <TripPage />
+    </Suspense>
+  );
+}
