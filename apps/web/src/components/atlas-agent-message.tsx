@@ -7,6 +7,7 @@ import type {
   ApprovalCardAnswers,
   ApprovalCardStatus,
 } from "@atlas/ui/components/agents/approval-card";
+import { Markdown } from "@atlas/ui/components/agents/markdown";
 import {
   MessageBubble,
   MessageBubbleContent,
@@ -412,7 +413,12 @@ const renderAssistantParts = (
     }
 
     if (part.type === "reasoning") {
-      activity.push({ content: part.text, id: key, type: "text" });
+      // Models emit empty reasoning parts around tool calls. Rendered, each
+      // one becomes a "Thought for 0s" row that opens onto nothing — three of
+      // them stacked above a single answer, all noise.
+      if (part.text.trim()) {
+        activity.push({ content: part.text, id: key, type: "text" });
+      }
       activityWorking ||= part.state === "streaming";
       continue;
     }
@@ -434,7 +440,7 @@ const renderAssistantParts = (
           showActions={isLast && !streaming}
           status={streaming ? "streaming" : "complete"}
         >
-          {part.text}
+          <Markdown streaming={streaming}>{part.text}</Markdown>
         </StreamingResponse>
       );
       continue;

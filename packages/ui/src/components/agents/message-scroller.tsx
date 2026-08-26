@@ -19,6 +19,8 @@ import {
 
 const PREVIEW_TITLE_LENGTH = 56;
 const PREVIEW_DESCRIPTION_LENGTH = 88;
+/** How long the transcript must stop mutating before the rail resyncs. */
+const RAIL_SYNC_QUIET_MS = 150;
 
 function truncateMessageText(text: string, limit: number) {
   if (text.length <= limit) return text;
@@ -133,7 +135,7 @@ export function MessageScroller({
   const programmaticScrollRef = useRef(false);
   const scrollTimerRef = useRef<number | undefined>(undefined);
   const frameRef = useRef<number | undefined>(undefined);
-  const railFrameRef = useRef<number | undefined>(undefined);
+  const railSyncTimerRef = useRef<number | undefined>(undefined);
   const railIdRef = useRef(new WeakMap<HTMLElement, string>());
   const railIdCounterRef = useRef(0);
   const railTargetsRef = useRef(new Map<string, HTMLElement>());
@@ -260,13 +262,25 @@ export function MessageScroller({
     );
   }, [navigation]);
 
+  /**
+   * Trailing debounce rather than a frame callback.
+   *
+   * A rail entry is derived from its message's text, so while a reply streams
+   * the preview changes constantly. On a frame callback that meant: sync,
+   * setState, render, DOM mutates, observer fires, sync again — a cycle that
+   * never got a quiet frame and tripped React's update-depth guard. Waiting
+   * for the mutations to stop breaks it, and a navigation rail settling a
+   * moment after the text does is not something anyone can perceive.
+   */
   const scheduleRailSync = useCallback(() => {
     if (navigation !== "rail") return;
-    if (railFrameRef.current) cancelAnimationFrame(railFrameRef.current);
-    railFrameRef.current = requestAnimationFrame(() => {
+    if (railSyncTimerRef.current) {
+      window.clearTimeout(railSyncTimerRef.current);
+    }
+    railSyncTimerRef.current = window.setTimeout(() => {
       syncRailItems();
       updateActiveRailItem();
-    });
+    }, RAIL_SYNC_QUIET_MS);
   }, [navigation, syncRailItems, updateActiveRailItem]);
 
   const scrollToEnd = useCallback((behavior: ScrollBehavior) => {
@@ -343,9 +357,16 @@ export function MessageScroller({
       typeof MutationObserver === "undefined"
         ? null
         : new MutationObserver(scheduleRailSync);
+    // Deliberately not `characterData`. The rail lists messages, so the only
+    // event it needs is a message arriving or leaving. Watching text as well
+    // made every streamed token resync the rail: the preview is derived from
+    // the message text, so it changed on each token, which set state, which
+    // re-rendered, which mutated the DOM the observer was watching. That loop
+    // stayed survivable while replies were one plain text node, and stopped
+    // being survivable once replies rendered as Markdown and each token
+    // rebuilt a subtree instead of appending a character.
     mutationObserver?.observe(content, {
       childList: true,
-      characterData: true,
       subtree: true,
     });
 
@@ -366,7 +387,9 @@ export function MessageScroller({
     () => () => {
       if (scrollTimerRef.current) window.clearTimeout(scrollTimerRef.current);
       if (frameRef.current) cancelAnimationFrame(frameRef.current);
-      if (railFrameRef.current) cancelAnimationFrame(railFrameRef.current);
+      if (railSyncTimerRef.current) {
+        window.clearTimeout(railSyncTimerRef.current);
+      }
     },
     []
   );
