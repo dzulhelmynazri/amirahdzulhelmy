@@ -1,18 +1,12 @@
 "use client";
 
 import {
-  Avatar,
-  AvatarFallback,
-  AvatarGroup,
-} from "@atlas/ui/components/avatar";
-import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
 } from "@atlas/ui/components/card";
-import { Firecrawl, Qwen } from "@atlas/ui/components/socials";
 
 import type { ActivityAlert, AlertCategory } from "@/types/activity";
 
@@ -108,27 +102,6 @@ export const CategoryChart = ({ alerts }: { alerts: ActivityAlert[] }) => {
             </li>
           ))}
         </ul>
-
-        {/*
-          Where these came from, as a footnote. It used to be a card of its own
-          carrying one sentence and no data, directly above a chart that had
-          nowhere to breathe.
-        */}
-        <div className="flex items-center gap-2 border-t pt-3 text-muted-foreground text-xs">
-          <AvatarGroup>
-            <Avatar size="sm">
-              <AvatarFallback>
-                <Firecrawl className="size-3" />
-              </AvatarFallback>
-            </Avatar>
-            <Avatar size="sm">
-              <AvatarFallback>
-                <Qwen className="size-3" />
-              </AvatarFallback>
-            </Avatar>
-          </AvatarGroup>
-          Travel Sentinel scans every 6 hours and posts what it finds here.
-        </div>
       </CardContent>
     </Card>
   );

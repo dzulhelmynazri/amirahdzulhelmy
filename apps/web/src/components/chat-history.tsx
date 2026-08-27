@@ -4,6 +4,7 @@ import { Button } from "@atlas/ui/components/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -81,7 +82,10 @@ export const ChatHistory = ({
         }
       />
       <DropdownMenuContent align="end" className="w-72">
-        <DropdownMenuLabel>Past conversations</DropdownMenuLabel>
+        {/* The label is a group label: outside a group it throws. */}
+        <DropdownMenuGroup>
+          <DropdownMenuLabel>Past conversations</DropdownMenuLabel>
+        </DropdownMenuGroup>
         <DropdownMenuSeparator />
 
         {rows === null ? (
