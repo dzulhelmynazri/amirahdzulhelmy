@@ -11,6 +11,7 @@
     "dev": "eve dev",
     "eval": "eve eval --url http://localhost:3001/eve/agents/travel-sentinel",
     "start": "eve start",
+    "test": "bun test",
     "typecheck": "tsc"
   },
   "dependencies": {
@@ -26,6 +27,7 @@
     "zod": "4.4.3"
   },
   "devDependencies": {
+    "@types/bun": "^1.3.14",
     "@types/node": "24.x",
     "typescript": "7.0.2"
   }
