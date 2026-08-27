@@ -19,6 +19,7 @@ import Image from "next/image";
 import { useCallback, useState } from "react";
 
 import { AtlasAgentMessageBody } from "@/components/atlas-agent-message";
+import { ChatHistory } from "@/components/chat-history";
 import { useAgentSidebarSync } from "@/hooks/use-agent-panel";
 import { useEveChat } from "@/hooks/use-eve-chat";
 
@@ -34,16 +35,19 @@ const AVATAR_URL = `https://api.dicebear.com/10.x/notionists/svg?seed=${encodeUR
 
 const AgentHeader = ({
   close,
+  onOpenConversation,
   onReset,
   showReset,
 }: {
   close: () => void;
+  onOpenConversation: (sessionId: string) => Promise<void>;
   onReset: () => void;
   showReset: boolean;
 }) => (
   <div className="flex h-16 shrink-0 items-center justify-between border-b px-4 transition-[height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-[48.5px]">
     <h2 className="font-semibold text-sm">{AGENT_NAME}</h2>
     <div className="flex items-center gap-1">
+      <ChatHistory onOpen={onOpenConversation} />
       {showReset ? (
         <Button
           aria-label="Start a new conversation"
@@ -246,7 +250,7 @@ export const AtlasAgent = () => {
   const { isOpen, isFullWidth, closeAgent, draft, mounted, setDraft } =
     useAgentSidebarSync();
   const {
-    actions: { cancel, reset, respond, send },
+    actions: { cancel, openConversation, reset, respond, send },
     state: { error, messages, ready, status },
   } = useEveChat();
 
@@ -294,6 +298,7 @@ export const AtlasAgent = () => {
         >
           <AgentHeader
             close={closeAgent}
+            onOpenConversation={openConversation}
             onReset={reset}
             showReset={messages.length > 0}
           />

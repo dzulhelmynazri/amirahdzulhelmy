@@ -50,6 +50,13 @@
       "when": 1787590900000,
       "tag": "0006_reflective_kinsey_walden",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1787824672431,
+      "tag": "0007_legal_inhumans",
+      "breakpoints": true
     }
   ]
 }

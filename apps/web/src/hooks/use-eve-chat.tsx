@@ -18,6 +18,8 @@ import {
 import type { ReactNode } from "react";
 import { toast } from "sonner";
 
+import { getConversation, saveConversation } from "@/app/actions/conversations";
+
 const AGENT_NAME = "flight-guardian";
 const STORAGE_KEY = "atlas:eve:flight-guardian:v1";
 const CHANGE_EVENT = "atlas-eve-chat-change";
@@ -36,6 +38,8 @@ interface EveChatState {
 
 interface EveChatActions {
   cancel: UseEveAgentHelpers<EveMessageData>["cancel"];
+  /** Replaces the panel's contents with a stored conversation. */
+  openConversation: (sessionId: string) => Promise<void>;
   reset: () => void;
   respond: UseEveAgentHelpers<EveMessageData>["respond"];
   send: (text: string) => Promise<void>;
@@ -153,6 +157,19 @@ const clearSavedChat = (): void => {
   notifySavedChat();
 };
 
+/** The opening line, used to title the chat. */
+const firstUserMessage = (
+  events: readonly MessageStreamEvent[]
+): string | undefined => {
+  for (const event of events) {
+    const { data } = event as { data?: { role?: string; text?: string } };
+
+    if (data?.role === "user" && data.text) {
+      return data.text;
+    }
+  }
+};
+
 const EveChatSession = ({
   children,
   saved,
@@ -169,6 +186,19 @@ const EveChatSession = ({
         events: snapshot.events,
         session: snapshot.session,
       });
+
+      // Also to the database, so a chat outlives this browser. localStorage
+      // stays the fast path for the conversation on screen; the row is what
+      // makes it findable tomorrow, or from another device.
+      const sessionId = snapshot.session?.sessionId;
+
+      if (sessionId) {
+        void saveConversation({
+          firstMessage: firstUserMessage(snapshot.events),
+          payload: { events: snapshot.events, session: snapshot.session },
+          sessionId,
+        });
+      }
     },
     []
   );
@@ -221,10 +251,30 @@ const EveChatSession = ({
     clearSavedChat();
   }, [agent]);
 
+  /**
+   * Writes the stored snapshot into the same slot the live chat reads from,
+   * then announces the change. The provider is keyed on the session id, so it
+   * remounts around the restored conversation rather than trying to merge two
+   * transcripts.
+   */
+  const openConversation = useCallback(async (sessionId: string) => {
+    const stored = await getConversation(sessionId);
+    const restored = parseSavedChat(JSON.stringify(stored?.payload ?? {}));
+
+    if (!restored.session) {
+      toast.error("That conversation could not be reopened.");
+      return;
+    }
+
+    persistSavedChat(restored);
+    notifySavedChat();
+  }, []);
+
   const value = useMemo<EveChatContextValue>(
     () => ({
       actions: {
         cancel: agent.cancel,
+        openConversation,
         reset,
         respond: agent.respond,
         send,
@@ -242,6 +292,7 @@ const EveChatSession = ({
       agent.error,
       agent.respond,
       agent.status,
+      openConversation,
       reset,
       send,
     ]

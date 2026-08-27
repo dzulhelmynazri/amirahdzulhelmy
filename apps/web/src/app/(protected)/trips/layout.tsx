@@ -1,5 +1,5 @@
-import { Suspense } from 'react';
-import type { ReactNode } from 'react';
+import { Suspense } from "react";
+import type { ReactNode } from "react";
 
 import { TripsSidebar } from "@/components/trips-sidebar";
 
