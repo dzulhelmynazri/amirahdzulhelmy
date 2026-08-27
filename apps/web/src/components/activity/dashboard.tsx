@@ -9,6 +9,7 @@ import { toActivityAlerts } from "./data";
 import { ActivityTable } from "./data-table";
 import { ActivityMap } from "./map";
 import { SentinelMonitorCard } from "./sentinel-monitor-card";
+import { TrendingNews } from "./trending-news";
 
 /**
  * The globe takes the full width and everything else sits under it.
@@ -36,6 +37,12 @@ export const ActivityDashboard = () => {
         <CategoryChart alerts={alerts} />
       </div>
       <ActivityTable alerts={alerts} />
+      {/*
+        Below the table, and last. World news is context, not something the
+        traveller has to act on — putting it above the alerts that concern
+        their own trips would invert what this page is for.
+      */}
+      <TrendingNews />
     </div>
   );
 };

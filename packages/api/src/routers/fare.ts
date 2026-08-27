@@ -421,8 +421,9 @@ const searchNearbyDates = async (
   };
 
   await Promise.all(
-    Array.from({ length: Math.min(NEARBY_CONCURRENCY, candidates.length) }, () =>
-      worker()
+    Array.from(
+      { length: Math.min(NEARBY_CONCURRENCY, candidates.length) },
+      () => worker()
     )
   );
 
@@ -523,7 +524,9 @@ export const fareRouter = router({
    */
   nearbyDates: protectedProcedure
     .input(searchInputSchema)
-    .mutation(({ ctx, input }) => searchNearbyDates(ctx.session.user.id, input)),
+    .mutation(({ ctx, input }) =>
+      searchNearbyDates(ctx.session.user.id, input)
+    ),
 
   /**
    * Routes this traveller actually searched, ranked by how often.

@@ -459,7 +459,10 @@ export function MessageScroller({
         onViewportKeyDown?.(event);
       }}
       className={cn(
-        "h-full overflow-y-auto overscroll-contain outline-none [overflow-anchor:none] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
+        // Horizontal overflow is clipped rather than scrolled: a message wide
+        // enough to need it is a bug in that message, and letting the whole
+        // transcript slide sideways hides the text instead of the cause.
+        "h-full overflow-x-hidden overflow-y-auto overscroll-contain outline-none [overflow-anchor:none] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
         navigation === "rail"
           ? "[-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           : "[scrollbar-gutter:stable]",
@@ -484,7 +487,11 @@ export function MessageScroller({
   return (
     <div
       data-slot="message-scroller"
-      className={cn("min-h-0", className)}
+      // `min-w-0` alongside `min-h-0`: a flex child keeps `min-width: auto`
+      // even under `flex-1`, so without it the transcript refuses to shrink
+      // below its widest message and pushes the whole panel out from under
+      // itself. `relative` anchors the rail, which is positioned absolutely.
+      className={cn("relative min-h-0 min-w-0", className)}
       {...props}
     >
       {navigation === "rail" ? (
