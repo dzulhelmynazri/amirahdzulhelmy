@@ -21,7 +21,9 @@ export default defineDynamic({
 
           // Only call that returns the full order — passengers, routing,
           // airline PNRs. Status is left alone: this is a read.
-          await persistBooking(context, null, result, input.orderNo);
+          await persistBooking(context, null, result, input.orderNo, {
+            enrichOnly: true,
+          });
 
           return result;
         },

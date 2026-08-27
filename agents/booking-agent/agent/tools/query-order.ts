@@ -14,8 +14,13 @@ export default defineTool({
     // This is the only call that returns the full order — passengers, routing,
     // airline PNRs, refund rules. Every other tool writes a thinner snapshot,
     // so without persisting here the stored booking never gains its details.
-    // Status is left alone: this is a read, not a state change.
-    await persistBooking(context, null, result, input.orderNo);
+    // Status is left alone: this is a read, not a state change. And it
+    // only enriches a booking this caller already owns — a lookup accepts
+    // any order number, so creating from one would let a traveller claim
+    // somebody else's booking by naming it.
+    await persistBooking(context, null, result, input.orderNo, {
+      enrichOnly: true,
+    });
 
     return result;
   },

@@ -107,12 +107,18 @@ const resolveAttribution = (
  * lookups use that: `queryOrderDetails` returns a numeric `orderStatus` whose
  * enum is undocumented, and guessing it could downgrade an issued booking. The
  * snapshot, PNR and totals are still worth keeping.
+ *
+ * `enrichOnly` updates a booking this caller already owns and never creates
+ * one. A lookup takes whatever order number it is handed, so without it a
+ * traveller who named someone else's order would have that booking written
+ * into their own account and listed as theirs.
  */
 export const persistBooking = async (
   context: ToolContext,
   status: string | null,
   result: unknown,
-  fallbackOrderNo?: string
+  fallbackOrderNo?: string,
+  options?: { enrichOnly?: boolean }
 ): Promise<void> => {
   try {
     const event = extractEvent(result, fallbackOrderNo);
@@ -144,17 +150,33 @@ export const persistBooking = async (
       fields.userId = userId;
     }
 
+    const changes = {
+      ...fields,
+      updatedAt: new Date(),
+      ...(status === null ? {} : { status }),
+    };
+
+    if (options?.enrichOnly) {
+      const { and, eq } = await import("drizzle-orm");
+
+      // Scoped to the owner as well as the order number. An order this caller
+      // does not already have matches nothing, so the lookup enriches their
+      // own booking or writes nothing at all.
+      if (!userId) {
+        return;
+      }
+
+      await db
+        .update(booking)
+        .set(changes)
+        .where(and(eq(booking.orderNo, orderNo), eq(booking.userId, userId)));
+      return;
+    }
+
     await db
       .insert(booking)
       .values({ ...fields, orderNo, status: status ?? "created" })
-      .onConflictDoUpdate({
-        set: {
-          ...fields,
-          updatedAt: new Date(),
-          ...(status === null ? {} : { status }),
-        },
-        target: booking.orderNo,
-      });
+      .onConflictDoUpdate({ set: changes, target: booking.orderNo });
   } catch {
     // Best effort: a failed booking write must never fail the booking itself.
   }
