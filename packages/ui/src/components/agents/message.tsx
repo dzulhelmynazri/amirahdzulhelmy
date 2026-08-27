@@ -124,7 +124,12 @@ export function Message({
             ...style,
           }}
           className={cn(
-            "group/message flex w-full items-start gap-2",
+            // `min-w-0` matters as much as `w-full` here. A flex item keeps
+            // `min-width: auto`, so without it this row grows to fit its
+            // widest child and the transcript pushes past the panel — and the
+            // `min-w-0` on MessageContent below cannot help, because a child
+            // can only shrink inside a parent that is itself constrained.
+            "group/message flex w-full min-w-0 items-start gap-2",
             from === "user" ? "flex-row-reverse" : "flex-row",
             className
           )}
@@ -146,7 +151,9 @@ export function MessageGroup({
     <div
       data-slot="message-group"
       className={cn(
-        "flex w-full flex-col",
+        // Same reason as Message: the column must be allowed to be narrower
+        // than its widest row, or every constraint below it is decorative.
+        "flex w-full min-w-0 flex-col",
         spacing === "compact" ? "gap-1.5" : "gap-4",
         className
       )}
