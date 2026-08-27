@@ -18,7 +18,7 @@ export default defineSchedule({
   cron: "0 23 * * *",
   markdown: `Check recorded earthquakes near upcoming trips.
 
-Use order-list to find trips departing within 45 days. For each distinct destination, call check-hazards once with its IATA code.
+Call upcoming-destinations to get the places this account is flying to. For each one, call check-hazards once with its IATA code. If the list is empty, stop and reply with nothing — never substitute a destination of your own.
 
 Only report an event of magnitude ${WORTH_REPORTING} or above. Below that it is not worth opening a conversation nobody asked for, even though it is worth answering if someone asks.
 
