@@ -356,6 +356,58 @@ const isTracePart = (part: EveMessagePart): part is EveDynamicToolPart =>
   part.type === "dynamic-tool" &&
   (part.state === "input-streaming" || part.state === "input-available");
 
+export interface PendingSuggestions {
+  items: { id: string; label: string }[];
+  requestId: string;
+}
+
+/**
+ * Next moves the agent offered, when it did not insist on one.
+ *
+ * `allowFreeform` is the signal, and it is the agent's own: it means "you do
+ * not have to pick one of these", which is what separates a suggestion from a
+ * question. Anything without it is a choice the turn is waiting on, and that
+ * belongs in the card where it takes the width and states itself plainly.
+ *
+ * Nothing here is derived from the text of the reply. Guessing follow-ups from
+ * an answer produces confident nonsense — a tap that leads somewhere the agent
+ * cannot act is worse than no tap at all.
+ */
+export const pendingSuggestions = (
+  messages: readonly EveMessage[]
+): PendingSuggestions | undefined => {
+  const last = messages.at(-1);
+
+  if (last?.role !== "assistant") {
+    return;
+  }
+
+  for (const part of last.parts.toReversed()) {
+    if (part.type !== "dynamic-tool" || part.state !== "approval-requested") {
+      continue;
+    }
+
+    const request = part.toolMetadata?.eve?.inputRequest;
+
+    if (
+      !request ||
+      request.kind === "tool-approval" ||
+      !request.allowFreeform
+    ) {
+      continue;
+    }
+
+    const items = (request.options ?? []).map((option) => ({
+      id: option.id,
+      label: option.label ?? option.id,
+    }));
+
+    if (items.length > 0) {
+      return { items, requestId: request.requestId };
+    }
+  }
+};
+
 /**
  * The specialist currently being waited on, if any.
  *

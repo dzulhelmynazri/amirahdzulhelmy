@@ -9,6 +9,7 @@ import {
   MessageScroller,
 } from "@atlas/ui/components/agents/message";
 import { PromptInput } from "@atlas/ui/components/agents/prompt-input";
+import { Suggestions } from "@atlas/ui/components/agents/suggestions";
 import { Button } from "@atlas/ui/components/button";
 import { Kbd, KbdGroup } from "@atlas/ui/components/kbd";
 import { cn } from "@atlas/ui/lib/utils";
@@ -18,9 +19,11 @@ import { SquarePen, User, XIcon } from "lucide-react";
 import Image from "next/image";
 import { useCallback, useState } from "react";
 
+import type { PendingSuggestions } from "@/components/atlas-agent-message";
 import {
   AtlasAgentMessageBody,
   pendingSubagent,
+  pendingSuggestions,
 } from "@/components/atlas-agent-message";
 import { ChatHistory } from "@/components/chat-history";
 import { useAgentSidebarSync } from "@/hooks/use-agent-panel";
@@ -187,7 +190,9 @@ const AgentComposer = ({
   isFullWidth,
   onStop,
   onSubmit,
+  onSuggestion,
   ready,
+  suggestions,
 }: {
   draft: string;
   errorMessage?: string;
@@ -196,7 +201,9 @@ const AgentComposer = ({
   isFullWidth: boolean;
   onStop: () => void;
   onSubmit: (text: string) => void;
+  onSuggestion: (optionId: string) => void;
   ready: boolean;
+  suggestions?: PendingSuggestions;
 }) => {
   const [value, setValue] = useState("");
   const [lastDraft, setLastDraft] = useState(draft);
@@ -221,6 +228,17 @@ const AgentComposer = ({
 
   return (
     <div className="flex shrink-0 flex-col gap-3 p-4">
+      {/*
+        The agent's own next moves, not ours. These answer the question it
+        asked rather than typing text into the box, so one tap ends the turn
+        instead of starting a fresh interpretation of a sentence it wrote.
+      */}
+      {suggestions && !isBusy ? (
+        <Suggestions
+          items={suggestions.items}
+          onSelect={(item) => onSuggestion(item.id)}
+        />
+      ) : null}
       {isEmpty ? (
         <>
           <div className="flex flex-col items-start gap-1.5">
@@ -289,6 +307,26 @@ export const AtlasAgent = () => {
     [send, setDraft]
   );
 
+  const suggestions = pendingSuggestions(messages);
+
+  /**
+   * Answers the question rather than typing into the box.
+   *
+   * The pills come from a live `ask_question`, so tapping one resolves that
+   * request and the turn continues. Putting the label in the composer instead
+   * would leave the question unanswered and start a second thread about a
+   * sentence the agent had already offered as an option.
+   */
+  const handleSuggestion = useCallback(
+    (optionId: string) => {
+      if (!suggestions) {
+        return;
+      }
+      void respond([{ optionId, requestId: suggestions.requestId }]);
+    },
+    [respond, suggestions]
+  );
+
   const handleStop = useCallback(() => {
     void cancel();
   }, [cancel]);
@@ -343,7 +381,9 @@ export const AtlasAgent = () => {
               isFullWidth={isFullWidth}
               onStop={handleStop}
               onSubmit={handleSubmit}
+              onSuggestion={handleSuggestion}
               ready={ready}
+              suggestions={suggestions}
             />
           </div>
         </div>
