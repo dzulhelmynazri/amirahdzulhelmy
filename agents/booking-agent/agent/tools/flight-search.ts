@@ -3,6 +3,7 @@ import { defineTool } from "eve/tools";
 import { z } from "zod";
 
 import { getAtlasClient } from "../lib/atlas";
+import { assertFirstSearch, recordSearchResult } from "../lib/one-search";
 
 /**
  * Atlas returns every outbound x inbound combination as its own routing, so an
@@ -19,13 +20,19 @@ const MAX_FARES_RETURNED = 20;
 export default defineTool({
   description:
     "Search flights on the Atlas booking API. Returns available routings with fares for the given route, dates, and passenger counts.",
-  async execute(input) {
+  async execute(input, context) {
+    assertFirstSearch(context, "flight-search");
+
     const client = await getAtlasClient();
     const response = await client.flights.search.search(input);
 
     if (response.status !== 0) {
       return { msg: response.msg, status: response.status };
     }
+
+    // Recorded from the raw response: `routings` is what "found something"
+    // means, and the normalised view below is a projection of it.
+    recordSearchResult(context, "flight-search", response);
 
     const fares = normalizeRoutings(response.routings, {
       airlines: input.airlines ?? [],

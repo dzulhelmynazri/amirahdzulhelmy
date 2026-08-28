@@ -2,13 +2,20 @@ import { defineTool } from "eve/tools";
 import { z } from "zod";
 
 import { getAtlasClient } from "../lib/atlas";
+import { assertFirstSearch, recordSearchResult } from "../lib/one-search";
 
 export default defineTool({
   description:
     "Search flights on the Atlas booking API. Returns available routings with fares for the given route, dates, and passenger counts.",
-  async execute(input) {
+  async execute(input, context) {
+    assertFirstSearch(context, "flight-search");
+
     const client = await getAtlasClient();
-    return client.flights.search.search(input);
+    const result = await client.flights.search.search(input);
+
+    recordSearchResult(context, "flight-search", result);
+
+    return result;
   },
   inputSchema: z.object({
     adultNum: z

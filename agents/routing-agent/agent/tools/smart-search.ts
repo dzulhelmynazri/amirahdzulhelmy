@@ -2,13 +2,20 @@ import { defineTool } from "eve/tools";
 import { z } from "zod";
 
 import { getAtlasClient } from "../lib/atlas";
+import { assertFirstSearch, recordSearchResult } from "../lib/one-search";
 
 export default defineTool({
   description:
     "Smart flight search on the Atlas booking API with flexible date handling. Accepts flight-search style inputs (origin, destination, dates, passenger counts); returns routings with fares. Read-only.",
-  async execute(input) {
+  async execute(input, context) {
+    assertFirstSearch(context, "smart-search");
+
     const client = await getAtlasClient();
-    return client.flights.smartSearch.search(input);
+    const result = await client.flights.smartSearch.search(input);
+
+    recordSearchResult(context, "smart-search", result);
+
+    return result;
   },
   inputSchema: z.looseObject({
     adultNum: z.number().int().min(1).optional().describe("Number of adults"),

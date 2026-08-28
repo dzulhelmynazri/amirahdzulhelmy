@@ -2,13 +2,20 @@ import { defineTool } from "eve/tools";
 import { z } from "zod";
 
 import { getAtlasClient } from "../lib/atlas";
+import { assertFirstSearch, recordSearchResult } from "../lib/one-search";
 
 export default defineTool({
   description:
     "Price comparison flight search on the Atlas booking API. Compares fares across dates for a route; accepts flight-search style inputs (origin, destination, dates, passenger counts). Read-only.",
-  async execute(input) {
+  async execute(input, context) {
+    assertFirstSearch(context, "price-compare-search");
+
     const client = await getAtlasClient();
-    return client.flights.priceCompareSearch.search(input);
+    const result = await client.flights.priceCompareSearch.search(input);
+
+    recordSearchResult(context, "price-compare-search", result);
+
+    return result;
   },
   inputSchema: z.looseObject({
     adultNum: z.number().int().min(1).optional().describe("Number of adults"),

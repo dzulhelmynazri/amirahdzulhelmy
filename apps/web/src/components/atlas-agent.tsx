@@ -192,7 +192,6 @@ const AgentComposer = ({
   isFullWidth,
   onStop,
   onSubmit,
-  onSuggestion,
   ready,
   suggestions,
 }: {
@@ -204,7 +203,6 @@ const AgentComposer = ({
   isFullWidth: boolean;
   onStop: () => void;
   onSubmit: (text: string) => void;
-  onSuggestion: (optionId: string) => void;
   ready: boolean;
   suggestions?: PendingSuggestions;
 }) => {
@@ -232,20 +230,18 @@ const AgentComposer = ({
   return (
     <div className="flex shrink-0 flex-col gap-3 p-4">
       {/*
-        The agent's own next moves, not ours. These answer the question it
-        asked rather than typing text into the box, so one tap ends the turn
-        instead of starting a fresh interpretation of a sentence it wrote.
-      */}
-      {suggestions && !isBusy ? (
-        <Suggestions
-          items={suggestions.items}
-          onSelect={(item) => onSuggestion(item.id)}
-        />
-      ) : null}
-      {/*
-        Generated pills go through the composer, because there is no live
-        request for them to answer. Sent straight away rather than parked in
-        the box: a tap that then needs a second tap on Send is not one tap.
+        Only when the agent asked nothing.
+        
+
+        Pills used to render for a live `ask_question` too, which put the same
+        five options on screen twice — once as radio buttons in the card, once
+        as pills underneath it. The card already carries its own input and
+        submit, so it needs no help. These are for the far commoner case where
+        the agent ended in prose and offered nothing at all.
+        
+
+        Sent straight away rather than parked in the box: a tap that then
+        needs a second tap on Send is not one tap.
       */}
       {!(suggestions || isBusy) && generated.length > 0 ? (
         <Suggestions
@@ -321,34 +317,15 @@ export const AtlasAgent = () => {
     [send, setDraft]
   );
 
+  /**
+   * A live question suppresses the generated pills entirely.
+   *
+   * The card it renders already states the choices and carries its own input,
+   * so pills beneath it were the same options a second time. This also keeps
+   * the model call from running for a turn nobody is waiting on an idea for.
+   */
   const suggestions = pendingSuggestions(messages);
-  /**
-   * Generated pills, used only when the agent offered none of its own.
-   *
-   * Its own are strictly better: tapping one answers a live request and the
-   * turn continues, where a generated one is sent as a new message. So this
-   * only runs when there is nothing to prefer, and never while a turn is
-   * still in flight — the reply it would describe is not finished yet.
-   */
   const generated = useFollowUps(messages, !(isBusy || suggestions));
-
-  /**
-   * Answers the question rather than typing into the box.
-   *
-   * The pills come from a live `ask_question`, so tapping one resolves that
-   * request and the turn continues. Putting the label in the composer instead
-   * would leave the question unanswered and start a second thread about a
-   * sentence the agent had already offered as an option.
-   */
-  const handleSuggestion = useCallback(
-    (optionId: string) => {
-      if (!suggestions) {
-        return;
-      }
-      void respond([{ optionId, requestId: suggestions.requestId }]);
-    },
-    [respond, suggestions]
-  );
 
   const handleStop = useCallback(() => {
     void cancel();
@@ -405,7 +382,6 @@ export const AtlasAgent = () => {
               onStop={handleStop}
               onSubmit={handleSubmit}
               generated={generated}
-              onSuggestion={handleSuggestion}
               ready={ready}
               suggestions={suggestions}
             />
