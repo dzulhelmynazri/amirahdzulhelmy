@@ -8,6 +8,7 @@
   },
   "scripts": {
     "build": "eve build",
+    "check-types": "tsc --noEmit",
     "dev": "eve dev",
     "eval": "eve eval --url http://localhost:3001/eve/agents/travel-sentinel",
     "start": "eve start",

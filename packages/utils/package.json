@@ -7,7 +7,9 @@
     "./currency": "./src/currency.ts",
     "./date": "./src/date.ts"
   },
-  "scripts": {},
+  "scripts": {
+    "check-types": "tsc --noEmit"
+  },
   "devDependencies": {
     "@atlas/config": "workspace:*",
     "typescript": "catalog:"
