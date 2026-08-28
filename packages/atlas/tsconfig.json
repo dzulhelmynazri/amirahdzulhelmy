@@ -5,5 +5,5 @@
     "strictNullChecks": true,
     "types": ["node", "bun"]
   },
-  "include": ["src/**/*.ts"]
+  "include": ["scripts/**/*.ts", "src/**/*.ts"]
 }

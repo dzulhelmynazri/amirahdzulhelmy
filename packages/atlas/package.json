@@ -13,6 +13,7 @@
   },
   "scripts": {
     "check-types": "tsc --noEmit",
+    "fare-compare": "bun run scripts/fare-compare.ts",
     "test": "bun test"
   },
   "dependencies": {
