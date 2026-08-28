@@ -14,10 +14,7 @@ import { History, Trash2 } from "lucide-react";
 import { useState, useTransition } from "react";
 
 import type { ConversationSummary } from "@/app/actions/conversations";
-import {
-  listConversations,
-  removeConversation,
-} from "@/app/actions/conversations";
+import { listConversations } from "@/app/actions/conversations";
 
 /** `Aug 27` for this year, `Aug 27, 2025` for anything older. */
 const formatWhen = (value: Date | string): string => {
@@ -38,8 +35,15 @@ const formatWhen = (value: Date | string): string => {
  * history nobody looked at is not worth a query on every navigation.
  */
 export const ChatHistory = ({
+  onDelete,
   onOpen,
 }: {
+  /**
+   * Goes through the chat session rather than straight to the server action.
+   * Deleting the conversation that is currently open has to clear the panel
+   * too, and this component has no idea which one that is.
+   */
+  onDelete: (sessionId: string) => Promise<void>;
   onOpen: (sessionId: string) => Promise<void>;
 }) => {
   const [rows, setRows] = useState<ConversationSummary[] | null>(null);
@@ -58,7 +62,7 @@ export const ChatHistory = ({
       (current ?? []).filter((row) => row.sessionId !== sessionId)
     );
     startRemoving(async () => {
-      await removeConversation(sessionId);
+      await onDelete(sessionId);
     });
   };
 

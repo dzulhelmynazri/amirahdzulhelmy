@@ -18,7 +18,11 @@ import {
 import type { ReactNode } from "react";
 import { toast } from "sonner";
 
-import { getConversation, saveConversation } from "@/app/actions/conversations";
+import {
+  getConversation,
+  removeConversation,
+  saveConversation,
+} from "@/app/actions/conversations";
 
 const AGENT_NAME = "flight-guardian";
 const STORAGE_KEY = "atlas:eve:flight-guardian:v1";
@@ -38,6 +42,15 @@ interface EveChatState {
 
 interface EveChatActions {
   cancel: UseEveAgentHelpers<EveMessageData>["cancel"];
+  /**
+   * Forgets a conversation everywhere it is held.
+   *
+   * A chat lives in two places: the row that makes it findable, and the
+   * localStorage snapshot the panel actually draws from. Deleting only the row
+   * leaves the transcript on screen with nothing behind it, and the next reply
+   * writes the row straight back — the delete undoes itself.
+   */
+  deleteConversation: (sessionId: string) => Promise<void>;
   /** Replaces the panel's contents with a stored conversation. */
   openConversation: (sessionId: string) => Promise<void>;
   reset: () => void;
@@ -252,6 +265,26 @@ const EveChatSession = ({
   }, [agent]);
 
   /**
+   * Clearing the panel is not a courtesy here, it is what makes the delete
+   * stick. `onFinish` writes the row back for whatever session is live, so a
+   * deleted conversation that is still on screen returns the moment the
+   * traveller says anything else. Resetting moves the panel onto a fresh
+   * session id, which is the only thing that stops that write.
+   */
+  const currentSessionId = agent.session?.sessionId;
+
+  const deleteConversation = useCallback(
+    async (sessionId: string) => {
+      await removeConversation(sessionId);
+
+      if (sessionId === currentSessionId) {
+        reset();
+      }
+    },
+    [currentSessionId, reset]
+  );
+
+  /**
    * Writes the stored snapshot into the same slot the live chat reads from,
    * then announces the change. The provider is keyed on the session id, so it
    * remounts around the restored conversation rather than trying to merge two
@@ -274,6 +307,7 @@ const EveChatSession = ({
     () => ({
       actions: {
         cancel: agent.cancel,
+        deleteConversation,
         openConversation,
         reset,
         respond: agent.respond,
@@ -292,6 +326,7 @@ const EveChatSession = ({
       agent.error,
       agent.respond,
       agent.status,
+      deleteConversation,
       openConversation,
       reset,
       send,
