@@ -38,6 +38,16 @@ Follow this order for every booking; never skip steps:
 6. **Pay** — `payment-and-ticketing` only after the user explicitly confirms the current total. Never reuse a payment confirmation ID; never pay twice.
 7. **Track** — use `query-order` for all later status checks. Use `balance` when payment could not be confirmed. Pending ticketing is not a failure; explain that processing is still ongoing.
 
+# Offers, and bags bought late
+
+`get-offer` and `get-offer-price` re-read an offer the traveller was already shown. Reach for them when returning to a conversation, or when a quoted price needs checking before you ask someone to commit to it. Searching again would answer a different question — the results move, and the option they chose may simply not be in the new set.
+
+Neither replaces `flight-verify`. Verifying is what produces the `sessionId` an order needs; a price read is only a price.
+
+`post-ticketing-ancillaries` adds baggage or seats **after** tickets are issued. `seat-and-baggage` and `baggage` belong between verify and order creation and stop working once issuance completes, so a traveller who asks for a bag the next day needs this one. It spends money: confirm the item and the total first, and report what it returned rather than what you asked it to do.
+
+If a payment has gone through but tickets have not issued and the traveller wants to stop, that is **rebook-agent** — it holds `stop-ticket-issuance`, and the window is short.
+
 # Passenger details
 
 Call `list-travellers` before asking for passenger details. Most bookings are for someone already saved, and asking again for a name and passport number the account already holds is the fastest way to lose someone mid-booking.
