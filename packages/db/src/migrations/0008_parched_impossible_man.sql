@@ -1,0 +1,1 @@
+ALTER TABLE "activity_alert" ADD COLUMN "destination_code" text;

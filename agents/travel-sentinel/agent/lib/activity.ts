@@ -22,6 +22,8 @@ export interface ActivityAlertInput {
   category: AlertCategory;
   countryCode: string;
   destination: string;
+  /** IATA code. The only thing the board's trip filter matches on. */
+  destinationCode: string;
   latitude: number;
   longitude: number;
   severity: AlertSeverity;
@@ -60,6 +62,8 @@ export const listActivityAlerts = async (input?: {
     category: row.category as AlertCategory,
     countryCode: row.countryCode,
     destination: row.destination,
+    // Null on rows written before the column existed.
+    destinationCode: row.destinationCode ?? "",
     detectedAt: row.detectedAt,
     id: row.id,
     latitude: row.latitude,
@@ -129,6 +133,7 @@ export const persistActivityAlert = async (
       category: input.category,
       countryCode: input.countryCode,
       destination: input.destination,
+      destinationCode: input.destinationCode,
       id,
       latitude: input.latitude,
       longitude: input.longitude,
@@ -147,6 +152,8 @@ export const persistActivityAlert = async (
     category: row.category as AlertCategory,
     countryCode: row.countryCode,
     destination: row.destination,
+    // Null on rows written before the column existed.
+    destinationCode: row.destinationCode ?? "",
     detectedAt: row.detectedAt,
     id: row.id,
     latitude: row.latitude,

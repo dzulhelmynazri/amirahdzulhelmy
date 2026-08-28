@@ -8,6 +8,7 @@ import {
   DuplicateAlertError,
   persistActivityAlert,
 } from "../lib/activity";
+import { WATCH_HORIZON_DAYS, upcomingDestinations } from "../lib/destinations";
 import { placeOf } from "../lib/gazetteer";
 
 const SCHEMA = z.object({
@@ -51,11 +52,32 @@ export default defineTool({
       };
     }
 
+    /**
+     * Nobody is flying there, so nothing to say about it.
+     *
+     * The schedule already asks for this in prose, and prose is advice. The
+     * board filled with Seoul, Bali and Bangkok for an account whose only trip
+     * was Kuala Lumpur to Singapore, which is how a board stops being read: a
+     * row that cannot concern you teaches you that none of them do.
+     *
+     * Refusing here rather than filtering later means the row never exists.
+     */
+    const code = input.destinationCode.trim().toUpperCase();
+    const watched = await upcomingDestinations();
+
+    if (!watched.some((destination) => destination.code === code)) {
+      return {
+        reason: `Nobody is flying to ${code} in the next ${WATCH_HORIZON_DAYS} days, so this alert has nobody to reach. Report only the destinations upcoming-destinations returned.`,
+        saved: false,
+      };
+    }
+
     try {
       const alert = await persistActivityAlert({
         category: input.category,
         countryCode: place.countryCode,
         destination: `${place.name}, ${place.countryCode}`,
+        destinationCode: code,
         latitude: place.lat,
         longitude: place.lon,
         severity: input.severity,

@@ -9,8 +9,10 @@ import {
 /**
  * Destination intelligence posted by travel-sentinel.
  *
- * The `/activity` dashboard reads this table. Rows are global — they describe
- * what the agent is watching, not a single traveller's inbox.
+ * Rows stay global on purpose. A haze advisory over Singapore is one fact, not
+ * one fact per traveller, so it is stored once and shown to whoever it
+ * concerns. `/activity` decides that at read time by matching
+ * `destinationCode` against the places the viewer is actually flying to.
  */
 export const activityAlert = pgTable(
   "activity_alert",
@@ -18,6 +20,15 @@ export const activityAlert = pgTable(
     category: text("category").notNull(),
     countryCode: text("country_code").notNull(),
     destination: text("destination").notNull(),
+    /**
+     * IATA code, and the only thing the trip filter matches on.
+     *
+     * `destination` is a display string — "Singapore, SG" — and joining a
+     * booking to an alert by comparing those was never going to hold. Nullable
+     * because rows written before this column existed have no code; those are
+     * treated as unmatchable rather than shown to everybody.
+     */
+    destinationCode: text("destination_code"),
     detectedAt: timestamp("detected_at").defaultNow().notNull(),
     id: text("id").primaryKey(),
     latitude: doublePrecision("latitude").notNull(),

@@ -21,11 +21,26 @@ import { TrendingNews } from "./trending-news";
  * space, so the cards moved beneath it where they have width to spare.
  */
 export const ActivityDashboard = () => {
-  const { data = [] } = useQuery(trpc.activity.list.queryOptions());
-  const alerts = toActivityAlerts(data);
+  const { data } = useQuery(trpc.activity.list.queryOptions());
+  const alerts = toActivityAlerts(data?.alerts ?? []);
+  const watching = data?.watching ?? [];
 
   return (
     <div className="flex flex-col gap-4 p-4 sm:p-6">
+      {/*
+        An empty board has two very different causes and they used to look
+        identical. "Nothing is wrong anywhere you are going" is reassuring;
+        "you have no trips, so nothing here could be about you" is an
+        explanation. Saying which one it is costs a line.
+      */}
+      {data && watching.length === 0 ? (
+        <p className="text-muted-foreground text-sm">
+          No trips departing in the next {data.horizonDays} days, so there is
+          nothing here yet. Alerts appear once you have a booking — this board
+          only carries places you are actually going. World news is below.
+        </p>
+      ) : null}
+
       <ActivityMap alerts={alerts} />
       {/*
         Side by side under the globe rather than stacked in a third-width

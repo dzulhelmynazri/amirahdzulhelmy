@@ -15,6 +15,17 @@ import { placeOf } from "./gazetteer";
 
 const MS_PER_DAY = 86_400_000;
 
+/**
+ * How far ahead a trip still counts as upcoming.
+ *
+ * Six months rather than a few weeks, because the decisions an alert changes
+ * are not all last-minute: a visa rule, a political advisory or a seasonal
+ * hazard is worth knowing about while there is still time to act on it. The
+ * board and `report-alert` share this number so a destination cannot be
+ * worth reporting and then invisible to the person it was reported for.
+ */
+export const WATCH_HORIZON_DAYS = 180;
+
 export interface UpcomingDestination {
   /** IATA code, resolvable through the gazetteer. */
   code: string;
@@ -65,7 +76,7 @@ const segmentsOf = (payload: unknown): Segment[] => {
  * it is honest where inventing coordinates for it is not.
  */
 export const upcomingDestinations = async (
-  horizonDays = 45
+  horizonDays = WATCH_HORIZON_DAYS
 ): Promise<UpcomingDestination[]> => {
   const { db } = await import("@atlas/db");
   const { booking } = await import("@atlas/db/schema/booking");
