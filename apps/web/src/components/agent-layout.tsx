@@ -11,6 +11,25 @@ import { AtlasAgent } from "@/components/atlas-agent";
 import { useAgentSidebarSync } from "@/hooks/use-agent-panel";
 
 /**
+ * Neither panel scrolls itself.
+ *
+ * `react-resizable-panels` puts `overflow: auto` on its inner box, which makes
+ * every panel a scroll container. Both of ours already contain their own
+ * scroller — the dashboard's is in the protected layout, the agent's is its
+ * message list — so the panel's scroll offset is a second, invisible position
+ * nothing owns. It only has to be one pixel scrollable to drift: a focus ring,
+ * an autoscroll, a trackpad nudge, and the whole page slides sideways with no
+ * scrollbar to explain why.
+ *
+ * `clip` rather than `hidden` on purpose. `hidden` is still a scroll container
+ * and still moves under `scrollIntoView`; `clip` cannot be scrolled by anything.
+ *
+ * A class would not work here. The library writes `overflow: auto` inline and
+ * spreads `style` after it, so only `style` wins.
+ */
+const NO_SCROLL = { overflow: "clip" } as const;
+
+/**
  * Splits the protected area into dashboard content and the docked agent
  * panel with a draggable divider on lg screens. The panel owns its width
  * (default 40%, never narrower than its 640px content). Below lg the agent
@@ -38,11 +57,20 @@ const DesktopLayout = ({
   if (isOpen) {
     return (
       <ResizablePanelGroup className="hidden min-w-0 flex-1 lg:flex">
-        <ResizablePanel className="flex flex-col" minSize="25%">
+        <ResizablePanel
+          className="flex flex-col"
+          minSize="25%"
+          style={NO_SCROLL}
+        >
           {children}
         </ResizablePanel>
         <ResizableHandle className="bg-transparent" />
-        <ResizablePanel defaultSize={550} maxSize="75%" minSize={550}>
+        <ResizablePanel
+          defaultSize={550}
+          maxSize="75%"
+          minSize={550}
+          style={NO_SCROLL}
+        >
           <AtlasAgent />
         </ResizablePanel>
       </ResizablePanelGroup>

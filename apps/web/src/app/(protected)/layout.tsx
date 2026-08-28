@@ -48,7 +48,15 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
           </Suspense>
           <AgentLayout>
             <DashboardContent>
-              <SidebarInset className="m-2 ml-2 min-h-0 rounded-xl shadow-sm md:ml-0 md:group-has-data-[state=collapsed]/sidebar-wrapper:ml-2 lg:rounded-r-none">
+              {/*
+                `w-auto`, not the component's default `w-full`. `w-full` is
+                `width: 100%` of the parent, and margins sit outside that width,
+                so `w-full` plus `m-2` is a box 16px wider than the space it was
+                given — 16px of overflow this element cannot see. As a flex
+                child it stretches to fit anyway, minus its margins, which is
+                what was wanted in the first place.
+              */}
+              <SidebarInset className="m-2 ml-2 min-h-0 w-auto rounded-xl shadow-sm md:ml-0 md:group-has-data-[state=collapsed]/sidebar-wrapper:ml-2 lg:rounded-r-none">
                 <header className="flex h-16 shrink-0 items-center justify-between gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
                   <div className="flex items-center gap-2 px-4">
                     {/* Derives the breadcrumb from the URL, so it cannot be
