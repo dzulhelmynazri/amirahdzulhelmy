@@ -104,15 +104,20 @@ const toolApprovalStatus = (part: EveDynamicToolPart): ToolApprovalStatus => {
   return "running";
 };
 
-const hitlCardStatus = (part: EveDynamicToolPart): ApprovalCardStatus => {
-  if (part.state === "approval-requested") {
-    return "pending";
-  }
-  if (part.state === "approval-responded") {
-    return "submitting";
-  }
-  return "answered";
-};
+/**
+ * A question is finished the moment it is answered.
+ *
+ * `ask_question` has no `execute`: nothing runs after the response, so there
+ * is no `output-available` for the part to move on to and it stays at
+ * `approval-responded` for the rest of the session. Treating that as
+ * "submitting" left every answered question spinning forever, while the
+ * conversation carried on underneath them.
+ *
+ * A gated tool is different — something does run there, so `toolApprovalStatus`
+ * keeps its spinner until the call returns.
+ */
+const questionCardStatus = (part: EveDynamicToolPart): ApprovalCardStatus =>
+  part.state === "approval-requested" ? "pending" : "answered";
 
 const toolOutput = (part: EveDynamicToolPart): string => {
   if (part.state === "output-error") {
@@ -303,7 +308,7 @@ const QuestionHitl = ({
         },
       ]}
       result={answered ? "Response recorded." : undefined}
-      status={hitlCardStatus(part)}
+      status={questionCardStatus(part)}
     />
   );
 };

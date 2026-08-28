@@ -91,7 +91,12 @@ function getSummary(
   duration: number
 ): ReactNode {
   if (type === "step" || type === "text") {
-    return (
+    // Sub-second thinking rounds to zero, and "Thought for 0s" claims a
+    // measurement while reporting none. Below a second the duration is not
+    // the interesting part; that it happened at all is.
+    return duration < 1 ? (
+      "Thought briefly"
+    ) : (
       <>
         Thought for{" "}
         <span className="tabular-nums">{formatDuration(duration)}</span>
