@@ -64,6 +64,27 @@ const MAX_ITEMS = 8;
  */
 const CACHE_MS = 900_000;
 
+/**
+ * The client batches tRPC calls, so this request shares an HTTP round trip
+ * with `activity.list`. Left uncapped it held the alert board hostage: a
+ * measured page load spent 10.8 seconds on `news.trending,activity.list`,
+ * nearly all of it waiting on GDELT, while the board it was batched with had
+ * been ready the whole time.
+ *
+ * Headlines are the least important thing on that page. Four seconds is more
+ * than they are worth.
+ */
+const TIMEOUT_MS = 4000;
+
+/**
+ * A failure is cached too, for a shorter window.
+ *
+ * Only successes used to be remembered, so an unreachable GDELT cost every
+ * single visit the full timeout — the slower it got, the more often it was
+ * asked. One minute of remembering turns that back into one slow request.
+ */
+const FAILURE_CACHE_MS = 60_000;
+
 export interface NewsItem {
   outlet: string;
   publishedAt: string;
@@ -118,10 +139,15 @@ const hostOf = (domain: string): string =>
  * different statements and only one of them is knowable from a failed fetch.
  */
 let cached: { at: number; items: NewsItem[] } | null = null;
+let failedAt: number | null = null;
 
 export const trendingDisruptionNews = async (): Promise<NewsItem[]> => {
   if (cached && Date.now() - cached.at < CACHE_MS) {
     return cached.items;
+  }
+
+  if (failedAt !== null && Date.now() - failedAt < FAILURE_CACHE_MS) {
+    throw new Error("GDELT was unreachable a moment ago");
   }
 
   const query = new URLSearchParams({
@@ -133,11 +159,23 @@ export const trendingDisruptionNews = async (): Promise<NewsItem[]> => {
     timespan: "24h",
   });
 
-  const response = await fetch(`${GDELT_ENDPOINT}?${query}`);
+  let response: Response;
+
+  try {
+    response = await fetch(`${GDELT_ENDPOINT}?${query}`, {
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+    });
+  } catch (error) {
+    failedAt = Date.now();
+    throw error;
+  }
 
   if (!response.ok) {
+    failedAt = Date.now();
     throw new Error(`GDELT answered ${response.status}`);
   }
+
+  failedAt = null;
 
   const body = (await response.json()) as { articles?: GdeltArticle[] };
   const seen = new Set<string>();
