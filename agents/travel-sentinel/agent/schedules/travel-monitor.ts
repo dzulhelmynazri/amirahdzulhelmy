@@ -12,7 +12,9 @@ import { defineSchedule } from "eve/schedules";
  * result is a fact rather than a prompt to improvise.
  */
 export default defineSchedule({
-  cron: "0 */6 * * *",
+  // Daily, because Vercel Hobby rejects anything more frequent and fails
+  // the whole build over it. On Pro this can go back to "0 */6 * * *".
+  cron: "0 21 * * *",
   markdown: `Check for new destination intelligence.
 
 Call upcoming-destinations first. It returns the places this account is actually flying to, computed from its own bookings. Check those and no others.
