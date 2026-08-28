@@ -1,21 +1,27 @@
+import { Redis } from "@upstash/redis";
 import type { ToolContext } from "eve/tools";
 
 /**
  * One *productive* search per turn, enforced rather than asked for.
  *
  * The instructions have said "run exactly one search per turn" since they were
- * written. Measured on a single "book the cheapest KL to Tokyo flight",
- * routing-agent ran seven searches in one turn and spent 456,151 input tokens,
- * because every fare table a search returns stays in context for the steps
- * after it. The traveller pays for that twice: in money and in the wait.
+ * written; measured runs ignored them — one spent 456k input tokens on seven
+ * searches, another 1.1M on thirty-six. Every fare table a search returns
+ * stays in context for every step after it.
  *
- * Productive is the important word. The first version counted any search, and
- * it made things worse: `price-compare-search` returned an empty set, every
- * recovery attempt was refused, and the agent concluded there were no flights
- * at all on a route that has plenty. A search that found nothing has not spent
- * the budget — it has not answered anything yet.
+ * Productive is the load-bearing word: a search that found nothing has not
+ * answered anything, so it does not claim the turn. The first version counted
+ * attempts and turned an empty comparison into "there are no flights" on a
+ * route with plenty.
  *
- * So the slot is claimed by results, not by attempts.
+ * **The claim lives in Redis, not module state.** The first version kept a
+ * module-scope Map, and a measured turn slipped five productive searches past
+ * it: dev serves tools from more than one process, and serverless will not
+ * even promise the same instance twice, so in-memory "state" is a per-process
+ * coincidence. Redis is already wired for the memory tools; a claim is one
+ * SETNX with a TTL. When Redis is unreachable the in-memory map still catches
+ * the same-process case and the search proceeds — a booking must never fail
+ * because a rate-guard's storage blinked.
  */
 
 const SEARCH_TOOLS = new Set([
@@ -24,16 +30,34 @@ const SEARCH_TOOLS = new Set([
   "smart-search",
 ]);
 
-/**
- * Keyed by session and turn, so a follow-up turn searches freely. Bounded by
- * eviction on write rather than a timer: a stale key costs one map entry, and
- * the process holding it is the same one that will clear it.
- */
-const productiveSearch = new Map<string, string>();
+/** Turns are minutes long; an hour of claim outlives any of them. */
+const CLAIM_TTL_SECONDS = 3600;
+
+const localClaims = new Map<string, string>();
 const MAX_TRACKED_TURNS = 200;
+const evictOldClaims = (): void => {
+  if (localClaims.size < MAX_TRACKED_TURNS) {
+    return;
+  }
+  const oldest = localClaims.keys().next().value;
+  if (oldest !== undefined) {
+    localClaims.delete(oldest);
+  }
+};
+
+let redisClient: Redis | null = null;
+
+const redis = (): Redis | null => {
+  try {
+    redisClient ??= Redis.fromEnv();
+    return redisClient;
+  } catch {
+    return null;
+  }
+};
 
 const keyOf = (context: ToolContext): string =>
-  `${context.session.id}:${context.session.turn.id}`;
+  `atlas:one-search:${context.session.id}:${context.session.turn.id}`;
 
 export class SecondSearchError extends Error {
   constructor(previous: string, attempted: string) {
@@ -44,19 +68,60 @@ export class SecondSearchError extends Error {
   }
 }
 
-/** Throws when a search has already returned results in this turn. */
-export const assertFirstSearch = (
+/**
+ * Claims the turn's search slot, or throws if it is already held.
+ *
+ * The claim happens *here*, before the search runs, and atomically (SETNX) —
+ * not after the result comes back. A measured run showed why: the model
+ * requests several searches in one batch, they execute concurrently, and
+ * every one of them passed a check-then-record guard before any had recorded.
+ * Five productive searches in one turn, guard "working" the whole time.
+ *
+ * An early claim can be wrong — the search may come back empty — so
+ * `recordSearchResult` releases it in that case, and the batch that was
+ * refused alongside it retries a step later against a free slot.
+ */
+export const assertFirstSearch = async (
   context: ToolContext,
   toolName: string
-): void => {
+): Promise<void> => {
   if (!SEARCH_TOOLS.has(toolName)) {
     return;
   }
 
-  const previous = productiveSearch.get(keyOf(context));
+  const key = keyOf(context);
+  const local = localClaims.get(key);
 
-  if (previous) {
-    throw new SecondSearchError(previous, toolName);
+  if (local) {
+    throw new SecondSearchError(local, toolName);
+  }
+
+  localClaims.set(key, toolName);
+  evictOldClaims();
+
+  const client = redis();
+
+  if (!client) {
+    return;
+  }
+
+  try {
+    const claimed = await client.set(key, toolName, {
+      ex: CLAIM_TTL_SECONDS,
+      nx: true,
+    });
+
+    // Upstash returns null when NX found the key already set.
+    if (claimed === null) {
+      const holder = (await client.get<string>(key)) ?? "another search";
+      localClaims.set(key, holder);
+      throw new SecondSearchError(holder, toolName);
+    }
+  } catch (error) {
+    if (error instanceof SecondSearchError) {
+      throw error;
+    }
+    // Redis being unreachable is not a reason to block a search.
   }
 };
 
@@ -76,27 +141,34 @@ const foundSomething = (result: unknown): boolean => {
 };
 
 /**
- * Records the search only if it actually returned routes.
- *
- * Call after the search, with its result. An empty answer leaves the slot
- * open so the next attempt — a wider date window, a different tool — is not
- * refused for a question nobody has answered yet.
+ * Settles the early claim: keeps it when the search found routes, releases
+ * it when the search came back empty — an empty answer has not answered
+ * anything, and holding the slot for it would turn "nothing on that date"
+ * into "no more searching this turn".
  */
-export const recordSearchResult = (
+export const recordSearchResult = async (
   context: ToolContext,
   toolName: string,
   result: unknown
-): void => {
-  if (!(SEARCH_TOOLS.has(toolName) && foundSomething(result))) {
+): Promise<void> => {
+  if (!SEARCH_TOOLS.has(toolName) || foundSomething(result)) {
     return;
   }
 
-  if (productiveSearch.size >= MAX_TRACKED_TURNS) {
-    const oldest = productiveSearch.keys().next().value;
-    if (oldest !== undefined) {
-      productiveSearch.delete(oldest);
-    }
+  const key = keyOf(context);
+
+  if (localClaims.get(key) === toolName) {
+    localClaims.delete(key);
   }
 
-  productiveSearch.set(keyOf(context), toolName);
+  try {
+    const client = redis();
+    // Release only our own claim; a GET-compare-DEL race here costs at most
+    // one extra allowed search, which is the failure direction we prefer.
+    if (client && (await client.get<string>(key)) === toolName) {
+      await client.del(key);
+    }
+  } catch {
+    // Unreachable Redis leaves the claim to its TTL.
+  }
 };

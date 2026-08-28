@@ -4,6 +4,7 @@ import { z } from "zod";
 import { getAtlasClient } from "../lib/atlas";
 import { shouldOmitExtraSearchTools } from "../lib/first-hop-tools";
 import { assertFirstSearch, recordSearchResult } from "../lib/one-search";
+import { condenseSearch } from "../lib/search-output";
 
 export default defineDynamic({
   events: {
@@ -16,14 +17,16 @@ export default defineDynamic({
         description:
           "Smart flight search on the Atlas booking API with flexible date handling. Accepts flight-search style inputs (origin, destination, dates, passenger counts); returns routings with fares. Read-only.",
         async execute(input, context) {
-          assertFirstSearch(context, "smart-search");
+          await assertFirstSearch(context, "smart-search");
 
           const client = await getAtlasClient();
           const result = await client.flights.smartSearch.search(input);
 
-          recordSearchResult(context, "smart-search", result);
+          await recordSearchResult(context, "smart-search", result);
 
-          return result;
+          // Condensed, not raw: the full payload was the largest single line
+          // in a booking turn's token bill. See lib/search-output.ts.
+          return condenseSearch(input, result);
         },
         inputSchema: z.looseObject({
           adultNum: z

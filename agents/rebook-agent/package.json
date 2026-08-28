@@ -18,6 +18,7 @@
     "@atlas/atlas-client": "workspace:*",
     "@atlas/auth": "workspace:*",
     "@atlas/db": "workspace:*",
+    "@upstash/redis": "^1.38.2",
     "@vercel/connect": "0.4.3",
     "ai": "^7.0.58",
     "drizzle-orm": "^0.45.2",

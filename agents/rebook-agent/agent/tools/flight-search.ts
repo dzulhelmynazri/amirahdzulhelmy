@@ -8,12 +8,12 @@ export default defineTool({
   description:
     "Search flights on the Atlas booking API. Returns available routings with fares for the given route, dates, and passenger counts.",
   async execute(input, context) {
-    assertFirstSearch(context, "flight-search");
+    await assertFirstSearch(context, "flight-search");
 
     const client = await getAtlasClient();
     const result = await client.flights.search.search(input);
 
-    recordSearchResult(context, "flight-search", result);
+    await recordSearchResult(context, "flight-search", result);
 
     return result;
   },

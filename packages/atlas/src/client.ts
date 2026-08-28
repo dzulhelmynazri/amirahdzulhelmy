@@ -32,6 +32,15 @@ const DEFAULT_AUTH_HEADER_NAMES: AtlasAuthHeaderNames = {
   clientSecret: "x-atlas-client-secret",
 };
 
+/**
+ * Applied when the caller sets nothing, which for a while was every agent
+ * tool: not one passed `timeoutMs`, so a hung Atlas call hung the tool — and
+ * the session around it lives for seven days. Sixty seconds is generous for
+ * an API whose slowest observed call is a wide smart-search; a caller that
+ * genuinely needs longer can still say so.
+ */
+const DEFAULT_TIMEOUT_MS = 60_000;
+
 const buildSignal = (
   options: AtlasRequestOptions | undefined
 ): AbortSignal | undefined => {
@@ -41,13 +50,7 @@ const buildSignal = (
     signals.push(options.signal);
   }
 
-  if (options?.timeoutMs !== undefined) {
-    signals.push(AbortSignal.timeout(options.timeoutMs));
-  }
-
-  if (signals.length === 0) {
-    return;
-  }
+  signals.push(AbortSignal.timeout(options?.timeoutMs ?? DEFAULT_TIMEOUT_MS));
 
   return signals.length === 1 ? signals[0] : AbortSignal.any(signals);
 };

@@ -3,19 +3,22 @@ import { z } from "zod";
 
 import { getAtlasClient } from "../lib/atlas";
 import { assertFirstSearch, recordSearchResult } from "../lib/one-search";
+import { condenseSearch } from "../lib/search-output";
 
 export default defineTool({
   description:
     "Price comparison flight search on the Atlas booking API. Compares fares across dates for a route; accepts flight-search style inputs (origin, destination, dates, passenger counts). Read-only.",
   async execute(input, context) {
-    assertFirstSearch(context, "price-compare-search");
+    await assertFirstSearch(context, "price-compare-search");
 
     const client = await getAtlasClient();
     const result = await client.flights.priceCompareSearch.search(input);
 
-    recordSearchResult(context, "price-compare-search", result);
+    await recordSearchResult(context, "price-compare-search", result);
 
-    return result;
+    // Condensed, not raw: the full payload was the largest single line
+    // in a booking turn's token bill. See lib/search-output.ts.
+    return condenseSearch(input, result);
   },
   inputSchema: z.looseObject({
     adultNum: z.number().int().min(1).optional().describe("Number of adults"),
