@@ -4,13 +4,14 @@ description: Use when the user searches flights with flexible dates, asks for th
 
 # Flexible fare search
 
-- **Exact dates** — use `flight-search`. No skill needed beyond the normal booking workflow.
-- **Flexible dates** ("around these dates", "+/- 3 days", "cheapest weekend") — use `smart-search`, which accepts flight-search style inputs with flexible date handling.
-- **Fare comparison across dates** ("which day is cheapest", "compare this week") — use `price-compare-search`, which compares fares across dates for a single route. Its results are comparison-only fares and cannot be verified or booked.
+- **Exact date** — `flight-search`. No skill needed beyond the normal booking workflow.
+- **Any question that spans dates** — "cheapest in September", "+/- 3 days", "which day is cheapest", "cheapest weekend" — use **`fare-scan` once** with the whole window. It sweeps every date concurrently in one call and returns the cheapest fare per day.
+
+**Never probe dates one search at a time.** A measured month-sweep done that way took 13 model steps and 36 search calls; one fare-scan replaces all of it. If the window is longer than 14 days, scan the most plausible weeks rather than iterating single days.
 
 ## Rules
 
-1. Confirm route, rough date window, and passenger counts before searching.
-2. Present results as a short ranked list: date, fare, and the key trade-off (duration, stops). Do not dump raw routing payloads.
-3. When the user picks an option from `flight-search` or `smart-search`, continue with the standard booking workflow starting at `flight-verify` using the selected offer's `routingIdentifier`. If the pick came from `price-compare-search`, run `flight-search` for that exact date first and continue only with the bookable offer it returns — never verify or book a comparison-only fare.
-4. Both tools are read-only and safe to repeat with refined parameters if the first window returns nothing usable.
+1. Search with what you have: route, window, passenger count. Do not interview first.
+2. Present the scan as a short ranked list: date, fare, stops. Do not dump raw payloads.
+3. Scan prices are comparison-level. When the traveller picks a date, run `flight-search` on that exact date and continue the booking from its result — never book from a scan row.
+4. One productive search claims the turn. Work from what it returned; refine on the next turn if needed.
