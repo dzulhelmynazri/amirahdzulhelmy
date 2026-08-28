@@ -29,12 +29,22 @@ const requireUserId = async (): Promise<string | undefined> => {
   return session?.user?.id;
 };
 
+/**
+ * What a chat is called before it has been named.
+ *
+ * Also the marker for "still unnamed": a row wearing this is safe to retitle
+ * the moment a real opening line turns up, which is how chats saved while the
+ * title extractor was broken repair themselves instead of staying "New chat"
+ * for good.
+ */
+const UNTITLED = "New chat";
+
 /** The opening message, trimmed to a line. Nobody titles a chat by hand. */
 const toTitle = (text: string): string => {
   const flat = text.replaceAll(/\s+/gu, " ").trim();
 
   if (flat.length <= TITLE_LENGTH) {
-    return flat || "New chat";
+    return flat || UNTITLED;
   }
 
   const cut = flat.slice(0, TITLE_LENGTH);
@@ -136,9 +146,23 @@ export const saveConversation = async (input: {
     const existing = await getConversation(input.sessionId);
 
     if (existing) {
+      const values: Partial<typeof conversation.$inferInsert> = {
+        lastMessageAt: now,
+        payload: input.payload,
+        updatedAt: now,
+      };
+
+      // Name it late rather than never. A chat that reached the table without
+      // an opening line keeps the placeholder, so the first save that does
+      // carry one is the chance to fix it — otherwise it is "New chat"
+      // forever, because nothing else ever writes this column.
+      if (existing.title === UNTITLED && input.firstMessage) {
+        values.title = toTitle(input.firstMessage);
+      }
+
       await db
         .update(conversation)
-        .set({ lastMessageAt: now, payload: input.payload, updatedAt: now })
+        .set(values)
         .where(
           and(
             eq(conversation.sessionId, input.sessionId),

@@ -170,15 +170,52 @@ const clearSavedChat = (): void => {
   notifySavedChat();
 };
 
-/** The opening line, used to title the chat. */
+interface ReceivedMessage {
+  message?: unknown;
+  parts?: unknown;
+}
+
+const partsToText = (parts: unknown): string => {
+  if (!Array.isArray(parts)) {
+    return "";
+  }
+
+  return parts
+    .map((part) =>
+      typeof part === "object" && part !== null && "text" in part
+        ? String((part as { text: unknown }).text)
+        : ""
+    )
+    .join(" ")
+    .trim();
+};
+
+/**
+ * The opening line, used to title the chat.
+ *
+ * Reads `message.received`, which is the event eve actually emits for
+ * something the traveller typed. This looked for a `role` and a `text` field
+ * that no event carries, so it returned nothing every single time and every
+ * chat in the history was titled "New chat".
+ */
 const firstUserMessage = (
   events: readonly MessageStreamEvent[]
 ): string | undefined => {
   for (const event of events) {
-    const { data } = event as { data?: { role?: string; text?: string } };
+    if (event.type !== "message.received") {
+      continue;
+    }
 
-    if (data?.role === "user" && data.text) {
-      return data.text;
+    const { data } = event as { data?: ReceivedMessage };
+
+    if (typeof data?.message === "string" && data.message.trim()) {
+      return data.message;
+    }
+
+    const text = partsToText(data?.parts);
+
+    if (text) {
+      return text;
     }
   }
 };
