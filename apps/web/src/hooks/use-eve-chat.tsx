@@ -13,6 +13,8 @@ import {
   use,
   useCallback,
   useMemo,
+  useRef,
+  useState,
   useSyncExternalStore,
 } from "react";
 import type { ReactNode } from "react";
@@ -220,13 +222,25 @@ const firstUserMessage = (
   }
 };
 
+/**
+ * How long to wait before treating a second failure as real.
+ *
+ * One reattach per five seconds. Without a floor a session that fails on
+ * attach would remount, fail, remount — a loop that looks like a hung panel
+ * and quietly re-runs the request.
+ */
+const REATTACH_COOLDOWN_MS = 5000;
+
 const EveChatSession = ({
   children,
+  onStreamLost,
   saved,
 }: {
   children: ReactNode;
+  onStreamLost: () => void;
   saved: SavedEveChat;
 }) => {
+  const lastReattach = useRef(0);
   const persistSnapshot = useCallback(
     (snapshot: {
       events: readonly MessageStreamEvent[];
@@ -257,7 +271,32 @@ const EveChatSession = ({
     agent: AGENT_NAME,
     initialEvents: saved.events ?? [],
     initialSession: saved.session,
+    /**
+     * A dropped connection is not a failed turn.
+     *
+     * eve's stream is durable and the session cursor is stored, so the run
+     * carries on server-side whatever happens to this socket. Measured: a
+     * search that showed "network error" in the panel had already finished
+     * on the server, with fares and all — the traveller was told it broke
+     * while it was busy succeeding.
+     *
+     * So the first drop reattaches instead of complaining. The remount
+     * replays from the stored cursor and the transcript refills. Only a
+     * second failure inside the cooldown is reported, because by then it is
+     * probably not the socket.
+     */
     onError: (error) => {
+      const now = Date.now();
+      const canReattach =
+        saved.session !== undefined &&
+        now - lastReattach.current > REATTACH_COOLDOWN_MS;
+
+      if (canReattach) {
+        lastReattach.current = now;
+        onStreamLost();
+        return;
+      }
+
       toast.error(error.message);
     },
     onFinish: (snapshot) => {
@@ -384,9 +423,17 @@ export const EveChatProvider = ({ children }: { children: ReactNode }) => {
     getSavedChatSnapshot,
     getServerSavedChatSnapshot
   );
+  // Bumped to reattach after a dropped stream. It is in the key because the
+  // session id has not changed — remounting is what makes `useEveAgent` pick
+  // the stream back up from the stored cursor.
+  const [attempt, setAttempt] = useState(0);
 
   return (
-    <EveChatSession key={saved.session?.sessionId ?? "new"} saved={saved}>
+    <EveChatSession
+      key={`${saved.session?.sessionId ?? "new"}:${attempt}`}
+      onStreamLost={() => setAttempt((value) => value + 1)}
+      saved={saved}
+    >
       {children}
     </EveChatSession>
   );
