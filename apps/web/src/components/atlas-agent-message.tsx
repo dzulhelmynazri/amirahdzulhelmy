@@ -330,6 +330,11 @@ const CompletedTool = ({ part }: { part: EveDynamicToolPart }) => {
   return (
     <ToolResult
       collapseOnComplete={status !== "running"}
+      // Closed unless it is still working. `collapseOnComplete` only fires on
+      // the running-to-finished transition, so a tool that was already done
+      // when the message rendered — reopening a chat, or a call that returned
+      // instantly — sat open showing `{"memories": []}` to nobody's benefit.
+      defaultOpen={status === "running"}
       copyText={output}
       kind="custom"
       maxHeight={220}

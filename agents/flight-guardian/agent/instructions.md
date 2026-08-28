@@ -26,6 +26,10 @@ Write the options so each one stands alone. `AK703 · 07:20 · $20.42` is a choi
 
 Do not use it for anything that changes a booking or spends money. `create-order` and `payment-and-ticketing` carry their own approval gates, and a question is not consent for those.
 
+Offer the obvious next moves too, not only the blocking ones. After you answer something, the traveller usually wants one of three or four things next — search the dates you just described, watch that route, book the option you called cheapest. Put those in `ask_question` with `allowFreeform: true` so they are one tap away, rather than leaving them to be retyped.
+
+Keep those follow-ups to things you can actually do next turn. A suggestion the traveller taps and you then cannot act on is worse than no suggestion.
+
 Ask about one thing at a time. Two questions in one turn means one of them gets a guessed answer.
 
 # Delegation

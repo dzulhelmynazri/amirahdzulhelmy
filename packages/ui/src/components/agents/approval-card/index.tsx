@@ -2,7 +2,6 @@
 // beui.dev/components/agents/approval-card
 
 import { AgentDisclosure } from "@atlas/ui/components/agents/agent-disclosure";
-import { ActionSwapRollText } from "@atlas/ui/components/motion/action-swap-roll";
 import { Button } from "@atlas/ui/components/motion/button";
 import { Checkbox } from "@atlas/ui/components/motion/checkbox";
 import { Input } from "@atlas/ui/components/motion/input";
@@ -318,10 +317,19 @@ export function ApprovalCard({
 
         <div className="min-w-0 flex-1">
           <div className="flex min-w-0 items-start gap-3">
-            <h3 className="min-w-0 flex-1 text-base font-medium leading-5 text-foreground">
-              <ActionSwapRollText value={titleKey}>
-                {displayTitle}
-              </ActionSwapRollText>
+            {/*
+              Plain text, not ActionSwapRollText. That component rolls
+              characters, so it is `whitespace-nowrap` by design — right for a
+              short label that swaps ("Approve" to "Approving"), wrong for a
+              question. Wrapped in it, a sentence became one unbreakable line
+              whose intrinsic width was the whole sentence, and no amount of
+              `min-w-0` on the ancestors could shrink it.
+            */}
+            <h3
+              className="min-w-0 flex-1 text-balance font-medium text-base text-foreground leading-5"
+              key={titleKey}
+            >
+              {displayTitle}
             </h3>
             {questionMode && interactive ? (
               <span className="shrink-0 text-xs tabular-nums text-muted-foreground/65">
