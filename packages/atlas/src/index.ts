@@ -22,7 +22,8 @@ import {
   createPostTicketingAncillaries,
   createRefunds,
   createRegenerateOrder,
-  createStopTicketIssuance1,
+  createConfirmBaggageLoss,
+  createStopTicketIssuance,
   createVoid,
 } from "./post-booking";
 import {
@@ -57,13 +58,14 @@ export const createAtlasClient = () => {
       verify: createFlightVerify(client),
     },
     postBooking: {
+      confirmBaggageLoss: createConfirmBaggageLoss(client),
       extractPnr: createExtractPnr(client),
       orderList: createOrderList(client),
       pnrClaim: createPnrClaim(client),
       postTicketingAncillaries: createPostTicketingAncillaries(client),
       refunds: createRefunds(client),
       regenerateOrder: createRegenerateOrder(client),
-      stopTicketIssuance1: createStopTicketIssuance1(client),
+      stopTicketIssuance: createStopTicketIssuance(client),
       void: createVoid(client),
     },
     utility: {

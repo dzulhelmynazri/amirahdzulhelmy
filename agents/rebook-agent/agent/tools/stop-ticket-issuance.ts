@@ -11,7 +11,7 @@ export default defineTool({
     "Halt ticket issuance on an Atlas order that has been paid but not yet ticketed. The narrow window where a mistake is still cheap to undo: once tickets issue, the remedy is a void or a refund, with the fees those carry. Use when the traveller says stop and the order has not issued. Never retry automatically — issuance may already have begun.",
   async execute(input, context) {
     const client = await getAtlasClient();
-    const result = await client.postBooking.stopTicketIssuance1.stop(input);
+    const result = await client.postBooking.stopTicketIssuance.stop(input);
     await persistBooking(context, "issuance_stopped", result, input.orderNo);
     return result;
   },

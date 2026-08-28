@@ -4,5 +4,6 @@ export { createPnrClaim } from "./pnr-claim";
 export { createPostTicketingAncillaries } from "./post-ticketing-ancillaries";
 export { createRefunds } from "./refunds";
 export { createRegenerateOrder } from "./regenerate-order";
-export { createStopTicketIssuance1 } from "./stop-ticket-issuance-1";
+export { createConfirmBaggageLoss } from "./confirm-baggage-loss";
+export { createStopTicketIssuance } from "./stop-ticket-issuance";
 export { createVoid } from "./void";
