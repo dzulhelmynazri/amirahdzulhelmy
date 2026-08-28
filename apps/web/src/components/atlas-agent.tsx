@@ -28,6 +28,7 @@ import {
 import { ChatHistory } from "@/components/chat-history";
 import { useAgentSidebarSync } from "@/hooks/use-agent-panel";
 import { useEveChat } from "@/hooks/use-eve-chat";
+import { useFollowUps } from "@/hooks/use-follow-ups";
 
 const AGENT_NAME = "Flight Guardian";
 
@@ -185,6 +186,7 @@ const AgentMessages = ({
 const AgentComposer = ({
   draft,
   errorMessage,
+  generated,
   isBusy,
   isEmpty,
   isFullWidth,
@@ -196,6 +198,7 @@ const AgentComposer = ({
 }: {
   draft: string;
   errorMessage?: string;
+  generated: readonly string[];
   isBusy: boolean;
   isEmpty: boolean;
   isFullWidth: boolean;
@@ -237,6 +240,17 @@ const AgentComposer = ({
         <Suggestions
           items={suggestions.items}
           onSelect={(item) => onSuggestion(item.id)}
+        />
+      ) : null}
+      {/*
+        Generated pills go through the composer, because there is no live
+        request for them to answer. Sent straight away rather than parked in
+        the box: a tap that then needs a second tap on Send is not one tap.
+      */}
+      {!(suggestions || isBusy) && generated.length > 0 ? (
+        <Suggestions
+          items={generated.map((label) => ({ id: label, label }))}
+          onSelect={(item) => handleSubmit(item.label)}
         />
       ) : null}
       {isEmpty ? (
@@ -308,6 +322,15 @@ export const AtlasAgent = () => {
   );
 
   const suggestions = pendingSuggestions(messages);
+  /**
+   * Generated pills, used only when the agent offered none of its own.
+   *
+   * Its own are strictly better: tapping one answers a live request and the
+   * turn continues, where a generated one is sent as a new message. So this
+   * only runs when there is nothing to prefer, and never while a turn is
+   * still in flight — the reply it would describe is not finished yet.
+   */
+  const generated = useFollowUps(messages, !(isBusy || suggestions));
 
   /**
    * Answers the question rather than typing into the box.
@@ -381,6 +404,7 @@ export const AtlasAgent = () => {
               isFullWidth={isFullWidth}
               onStop={handleStop}
               onSubmit={handleSubmit}
+              generated={generated}
               onSuggestion={handleSuggestion}
               ready={ready}
               suggestions={suggestions}
