@@ -1,4 +1,4 @@
 - generic [active] [ref=f3e1]:
-  - generic [ref=f3e2]: Wait ahh...
-  - region "Notifications alt+T"
-  - alert [ref=f3e4]
+    - generic [ref=f3e2]: Wait ahh...
+    - region "Notifications alt+T"
+    - alert [ref=f3e4]

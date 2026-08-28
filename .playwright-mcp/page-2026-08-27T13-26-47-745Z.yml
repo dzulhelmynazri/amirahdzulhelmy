@@ -1,107 +1,107 @@
 - generic [active] [ref=e1]:
-  - generic [ref=e3]:
-    - generic [ref=e6]:
-      - generic [ref=e8]:
-        - generic [ref=e9]: Flight Guardians
-        - list [ref=e10]:
-          - listitem [ref=e11]:
-            - link "Activity" [ref=e12] [cursor=pointer]:
-              - /url: /activity
-          - listitem [ref=e16]:
-            - link "Fares" [ref=e17] [cursor=pointer]:
-              - /url: /fares
-          - listitem [ref=e23]:
-            - link "Bookings" [ref=e24] [cursor=pointer]:
-              - /url: /bookings
-          - listitem [ref=e27]:
-            - link "Trips" [ref=e28] [cursor=pointer]:
-              - /url: /trips
-          - listitem [ref=e31]:
-            - link "Integrations" [ref=e32] [cursor=pointer]:
-              - /url: /integrations
-      - list [ref=e38]:
-        - listitem [ref=e39]:
-          - button [ref=e40] [cursor=pointer]
-    - main [ref=e45]:
-      - generic [ref=e46]:
-        - heading "Activity" [level=1] [ref=e48]
-        - generic [ref=e49]:
-          - button "Toggle theme" [ref=e50] [cursor=pointer]
-          - button "Agent" [ref=e53] [cursor=pointer]:
-            - generic [ref=e55]:
-              - generic: ⌘
-              - generic: I
-      - separator [ref=e56]
-      - generic [ref=e58]:
-        - generic [ref=e59]:
-          - generic [ref=e60]:
-            - generic [ref=e61]: Global alert map
-            - generic [ref=e62]: What travel-sentinel is watching around the world right now. Click a destination for details; drag or use arrow keys to rotate.
-          - generic [ref=e63]:
-            - button "Rotatable globe. Use arrow keys to rotate." [ref=e65]
-            - generic [ref=e70]:
-              - generic [ref=e71]: Critical
-              - generic [ref=e73]: High
-              - generic [ref=e75]: Medium
-              - generic [ref=e77]: Low
-        - generic [ref=e79]:
-          - generic [ref=e81]:
-            - generic [ref=e82]: Travel Sentinel
-            - generic [ref=e83]: The Travel Sentinel agent scans destinations every 6 hours and posts new alerts here.
-            - generic [ref=e85]:
-              - img "Firecrawl" [ref=e88]
-              - img "Qwen" [ref=e92]
-          - generic [ref=e94]:
-            - generic [ref=e95]:
-              - generic [ref=e96]: Alerts by category
-              - generic [ref=e97]: Nothing recorded yet.
-            - list [ref=e100]:
-              - listitem [ref=e101]:
-                - generic [ref=e103]: Health
-                - generic [ref=e104]: "0"
-              - listitem [ref=e105]:
-                - generic [ref=e107]: Political
-                - generic [ref=e108]: "0"
-              - listitem [ref=e109]:
-                - generic [ref=e111]: Safety
-                - generic [ref=e112]: "0"
-              - listitem [ref=e113]:
-                - generic [ref=e115]: Transit
-                - generic [ref=e116]: "0"
-              - listitem [ref=e117]:
-                - generic [ref=e119]: Weather
-                - generic [ref=e120]: "0"
-        - generic [ref=e121]:
-          - generic [ref=e122]:
-            - group [ref=e123]:
-              - group [ref=e124]
-              - textbox "Search alerts" [ref=e128]:
-                - /placeholder: Search destination
-            - combobox "Filter by alert type" [ref=e130]:
-              - option "All types" [selected]
-              - option "Health"
-              - option "Political"
-              - option "Safety"
-              - option "Transit"
-              - option "Weather"
-          - table [ref=e133]:
-            - rowgroup [ref=e134]:
-              - row [ref=e135]:
-                - columnheader [ref=e136]:
-                  - button "Severity" [ref=e137] [cursor=pointer]
-                - columnheader "Type" [ref=e138]
-                - columnheader [ref=e139]:
-                  - button "Destination" [ref=e140] [cursor=pointer]
-                - columnheader "Summary" [ref=e141]
-                - columnheader "Status" [ref=e142]
-                - columnheader "Source" [ref=e143]
-                - columnheader [ref=e144]:
-                  - button "Detected" [ref=e145] [cursor=pointer]
-            - rowgroup [ref=e146]:
-              - row [ref=e147]:
-                - cell "No alerts found Travel Sentinel posts destination alerts here after each scan." [ref=e148]:
-                  - generic [ref=e151]:
-                    - generic [ref=e153]: No alerts found
-                    - generic [ref=e154]: Travel Sentinel posts destination alerts here after each scan.
-          - paragraph [ref=e155]: 0 of 0 alerts
-  - region "Notifications alt+T"
+    - generic [ref=e3]:
+        - generic [ref=e6]:
+            - generic [ref=e8]:
+                - generic [ref=e9]: Flight Guardians
+                - list [ref=e10]:
+                    - listitem [ref=e11]:
+                        - link "Activity" [ref=e12] [cursor=pointer]:
+                            - /url: /activity
+                    - listitem [ref=e16]:
+                        - link "Fares" [ref=e17] [cursor=pointer]:
+                            - /url: /fares
+                    - listitem [ref=e23]:
+                        - link "Bookings" [ref=e24] [cursor=pointer]:
+                            - /url: /bookings
+                    - listitem [ref=e27]:
+                        - link "Trips" [ref=e28] [cursor=pointer]:
+                            - /url: /trips
+                    - listitem [ref=e31]:
+                        - link "Integrations" [ref=e32] [cursor=pointer]:
+                            - /url: /integrations
+            - list [ref=e38]:
+                - listitem [ref=e39]:
+                    - button [ref=e40] [cursor=pointer]
+        - main [ref=e45]:
+            - generic [ref=e46]:
+                - heading "Activity" [level=1] [ref=e48]
+                - generic [ref=e49]:
+                    - button "Toggle theme" [ref=e50] [cursor=pointer]
+                    - button "Agent" [ref=e53] [cursor=pointer]:
+                        - generic [ref=e55]:
+                            - generic: ⌘
+                            - generic: I
+            - separator [ref=e56]
+            - generic [ref=e58]:
+                - generic [ref=e59]:
+                    - generic [ref=e60]:
+                        - generic [ref=e61]: Global alert map
+                        - generic [ref=e62]: What travel-sentinel is watching around the world right now. Click a destination for details; drag or use arrow keys to rotate.
+                    - generic [ref=e63]:
+                        - button "Rotatable globe. Use arrow keys to rotate." [ref=e65]
+                        - generic [ref=e70]:
+                            - generic [ref=e71]: Critical
+                            - generic [ref=e73]: High
+                            - generic [ref=e75]: Medium
+                            - generic [ref=e77]: Low
+                - generic [ref=e79]:
+                    - generic [ref=e81]:
+                        - generic [ref=e82]: Travel Sentinel
+                        - generic [ref=e83]: The Travel Sentinel agent scans destinations every 6 hours and posts new alerts here.
+                        - generic [ref=e85]:
+                            - img "Firecrawl" [ref=e88]
+                            - img "Qwen" [ref=e92]
+                    - generic [ref=e94]:
+                        - generic [ref=e95]:
+                            - generic [ref=e96]: Alerts by category
+                            - generic [ref=e97]: Nothing recorded yet.
+                        - list [ref=e100]:
+                            - listitem [ref=e101]:
+                                - generic [ref=e103]: Health
+                                - generic [ref=e104]: "0"
+                            - listitem [ref=e105]:
+                                - generic [ref=e107]: Political
+                                - generic [ref=e108]: "0"
+                            - listitem [ref=e109]:
+                                - generic [ref=e111]: Safety
+                                - generic [ref=e112]: "0"
+                            - listitem [ref=e113]:
+                                - generic [ref=e115]: Transit
+                                - generic [ref=e116]: "0"
+                            - listitem [ref=e117]:
+                                - generic [ref=e119]: Weather
+                                - generic [ref=e120]: "0"
+                - generic [ref=e121]:
+                    - generic [ref=e122]:
+                        - group [ref=e123]:
+                            - group [ref=e124]
+                            - textbox "Search alerts" [ref=e128]:
+                                - /placeholder: Search destination
+                        - combobox "Filter by alert type" [ref=e130]:
+                            - option "All types" [selected]
+                            - option "Health"
+                            - option "Political"
+                            - option "Safety"
+                            - option "Transit"
+                            - option "Weather"
+                    - table [ref=e133]:
+                        - rowgroup [ref=e134]:
+                            - row [ref=e135]:
+                                - columnheader [ref=e136]:
+                                    - button "Severity" [ref=e137] [cursor=pointer]
+                                - columnheader "Type" [ref=e138]
+                                - columnheader [ref=e139]:
+                                    - button "Destination" [ref=e140] [cursor=pointer]
+                                - columnheader "Summary" [ref=e141]
+                                - columnheader "Status" [ref=e142]
+                                - columnheader "Source" [ref=e143]
+                                - columnheader [ref=e144]:
+                                    - button "Detected" [ref=e145] [cursor=pointer]
+                        - rowgroup [ref=e146]:
+                            - row [ref=e147]:
+                                - cell "No alerts found Travel Sentinel posts destination alerts here after each scan." [ref=e148]:
+                                    - generic [ref=e151]:
+                                        - generic [ref=e153]: No alerts found
+                                        - generic [ref=e154]: Travel Sentinel posts destination alerts here after each scan.
+                    - paragraph [ref=e155]: 0 of 0 alerts
+    - region "Notifications alt+T"
