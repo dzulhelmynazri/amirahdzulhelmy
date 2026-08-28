@@ -356,6 +356,30 @@ const isTracePart = (part: EveMessagePart): part is EveDynamicToolPart =>
   part.type === "dynamic-tool" &&
   (part.state === "input-streaming" || part.state === "input-available");
 
+/**
+ * The specialist currently being waited on, if any.
+ *
+ * A hop is the longest silence in the panel — the whole request is sitting in
+ * another agent's session, which has its own model turns and its own tools.
+ * The name was already on screen, but only as a trace line inside a collapsed
+ * group, so from the outside it read as nothing happening.
+ */
+export const pendingSubagent = (
+  messages: readonly EveMessage[]
+): string | undefined => {
+  const last = messages.at(-1);
+
+  if (last?.role !== "assistant") {
+    return;
+  }
+
+  for (const part of last.parts.toReversed()) {
+    if (isTracePart(part) && part.toolMetadata?.eve?.kind === "subagent-call") {
+      return part.toolMetadata.eve.name ?? part.toolName;
+    }
+  }
+};
+
 const isHitlPart = (part: EveMessagePart): part is EveDynamicToolPart =>
   part.type === "dynamic-tool" &&
   (part.state === "approval-requested" ||

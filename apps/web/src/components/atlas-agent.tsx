@@ -18,7 +18,10 @@ import { SquarePen, User, XIcon } from "lucide-react";
 import Image from "next/image";
 import { useCallback, useState } from "react";
 
-import { AtlasAgentMessageBody } from "@/components/atlas-agent-message";
+import {
+  AtlasAgentMessageBody,
+  pendingSubagent,
+} from "@/components/atlas-agent-message";
 import { ChatHistory } from "@/components/chat-history";
 import { useAgentSidebarSync } from "@/hooks/use-agent-panel";
 import { useEveChat } from "@/hooks/use-eve-chat";
@@ -85,8 +88,16 @@ const AgentMessages = ({
   respond: ReturnType<typeof useEveChat>["actions"]["respond"];
 }) => {
   const last = messages.at(-1);
+  /**
+   * A hop is the longest wait in the panel and the one that used to look like
+   * nothing at all: the assistant message already has parts, so the ordinary
+   * typing indicator stayed hidden while the whole request sat in another
+   * agent's session. Naming the specialist turns dead air into progress.
+   */
+  const waitingOn = isBusy ? pendingSubagent(messages) : undefined;
   const waitingForAssistant =
     isBusy && (last?.role !== "assistant" || last.parts.length === 0);
+  const showThinking = waitingForAssistant || waitingOn !== undefined;
 
   if (messages.length === 0 && !isBusy) {
     return (
@@ -142,7 +153,7 @@ const AgentMessages = ({
           );
         })}
 
-        {waitingForAssistant ? (
+        {showThinking ? (
           <Message from="assistant" key="typing">
             <MessageAvatar>
               <Image
@@ -156,7 +167,9 @@ const AgentMessages = ({
             </MessageAvatar>
             <MessageContent>
               <ThinkingShimmer className="text-sm" duration={1.8}>
-                Thinking…
+                {waitingOn
+                  ? `Asking ${waitingOn} — this one takes a moment…`
+                  : "Thinking…"}
               </ThinkingShimmer>
             </MessageContent>
           </Message>
