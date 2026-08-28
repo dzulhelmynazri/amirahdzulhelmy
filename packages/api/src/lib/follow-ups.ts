@@ -22,12 +22,15 @@ import { env } from "@atlas/env/server";
 const GATEWAY = "https://ai-gateway.vercel.sh/v1/chat/completions";
 
 /**
- * Deliberately not the agent model.
+ * Deliberately not the agent model, and latency is the reason.
  *
- * Writing three short lines is not the job the conversation model is chosen
- * for, and this runs after every turn. `ling-3.0-flash` is free on the
- * gateway and measured fastest here: 2.07s against 2.94s for glm-5.3-flash,
- * with better-phrased output.
+ * The pill row has an 8s timeout, and the agents' qwen measured 7.7-10.4s on
+ * this exact prompt even with reasoning_effort "none" — pills would simply
+ * never appear half the time. ling answers in ~2.1s.
+ *
+ * Not free, despite an earlier comment here claiming it was: ling-3.0-flash
+ * is listed at $0.06/M in. A call this size costs about $0.00003, which is
+ * the whole of the price of working pills.
  */
 const MODEL = "inclusionai/ling-3.0-flash";
 
