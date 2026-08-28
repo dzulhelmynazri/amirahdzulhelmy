@@ -1,4 +1,4 @@
-import { defineAgent } from "eve";
+import { defineAgent, defineDynamic } from "eve";
 
 export default defineAgent({
   build: {
@@ -13,16 +13,29 @@ export default defineAgent({
     sessionTimeoutMs: 7 * 24 * 60 * 60 * 1000,
   },
   /**
-   * Qwen everywhere unless something says otherwise.
+   * Two model tiers, both env-switchable without a deploy.
    *
-   * The default is what staging and production run, so a deploy that sets
-   * nothing behaves exactly as before. `ATLAS_AGENT_MODEL` is for local work,
-   * where a cheaper model is worth more than matching production — it lives in
-   * `.env.local`, which is gitignored, so it cannot follow the code out.
+   * `ATLAS_AGENT_MODEL` is the conversation model; unset falls to qwen, so a
+   * deploy that sets nothing behaves exactly as before. `ATLAS_TASK_MODEL`
+   * covers background work — schedule runs and subagent hops — and defaults
+   * to the conversation model, so setting neither changes nothing.
    *
-   * Read at module load, which means changing it needs a restart, not a
-   * redeploy.
+   * Adapted from the sibling Atlas runtime. The point is the lever: when a
+   * cheaper model proves good enough for schedule sweeps, moving them there
+   * is an env edit, and nothing in the tools knows which model answered.
+   *
+   * Resolved once per session on purpose — switching mid-session re-ingests
+   * the whole conversation at uncached prices.
    */
-  model: process.env.ATLAS_AGENT_MODEL ?? "alibaba/qwen3.7-flash",
+  model: defineDynamic({
+    events: {
+      "session.started": (_event, ctx) =>
+        ctx.channel.kind === "schedule" || ctx.channel.kind === "subagent"
+          ? (process.env.ATLAS_TASK_MODEL ??
+            process.env.ATLAS_AGENT_MODEL ??
+            "alibaba/qwen3.7-flash")
+          : (process.env.ATLAS_AGENT_MODEL ?? "alibaba/qwen3.7-flash"),
+    },
+  }),
   reasoning: "low",
 });

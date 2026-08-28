@@ -61,3 +61,6 @@ coverage
 .cache
 tmp
 temp
+
+# Playwright MCP session snapshots — browser junk, not source
+.playwright-mcp/
