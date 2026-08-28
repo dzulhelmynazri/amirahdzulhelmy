@@ -231,6 +231,16 @@ const firstUserMessage = (
  */
 const REATTACH_COOLDOWN_MS = 5000;
 
+/**
+ * Module scope, not a ref, because reattaching *is* a remount.
+ *
+ * As a `useRef` inside the session component this reset to 0 every time it
+ * did its job, so the cooldown it existed to enforce could never fire — the
+ * one guard against a remount loop was destroyed by the remount. There is a
+ * single chat panel, so one module-level number is the whole of the state.
+ */
+let lastReattachAt = 0;
+
 const EveChatSession = ({
   children,
   onStreamLost,
@@ -240,7 +250,11 @@ const EveChatSession = ({
   onStreamLost: () => void;
   saved: SavedEveChat;
 }) => {
-  const lastReattach = useRef(0);
+  /**
+   * Seeded from the restored session so a reopened conversation can reattach
+   * on its very first error, before `onSessionChange` has fired.
+   */
+  const liveSessionId = useRef(saved.session?.sessionId);
   const persistSnapshot = useCallback(
     (snapshot: {
       events: readonly MessageStreamEvent[];
@@ -287,12 +301,22 @@ const EveChatSession = ({
      */
     onError: (error) => {
       const now = Date.now();
+      /**
+       * The live session, not the `saved` prop.
+       *
+       * `saved` is read through `useSyncExternalStore` in the provider, and
+       * `persistSavedChat` writes localStorage without notifying it. So for a
+       * chat started in this mount the prop stays frozen at `{}` and
+       * `saved.session` is undefined for the whole conversation — which meant
+       * this guard was false every time and the reattach never once ran. The
+       * ref is written by `onSessionChange` as soon as there is a session.
+       */
       const canReattach =
-        saved.session !== undefined &&
-        now - lastReattach.current > REATTACH_COOLDOWN_MS;
+        liveSessionId.current !== undefined &&
+        now - lastReattachAt > REATTACH_COOLDOWN_MS;
 
       if (canReattach) {
-        lastReattach.current = now;
+        lastReattachAt = now;
         onStreamLost();
         return;
       }
@@ -306,6 +330,9 @@ const EveChatSession = ({
       if (!session) {
         return;
       }
+      // What `onError` checks before reattaching. Written here because this is
+      // the first moment a session exists to reattach to.
+      liveSessionId.current = session.sessionId;
       const previous = getSavedChatSnapshot();
       const sameSession = previous.session?.sessionId === session.sessionId;
       persistSavedChat({
