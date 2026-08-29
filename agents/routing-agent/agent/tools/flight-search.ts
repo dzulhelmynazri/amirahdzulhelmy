@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import { getAtlasClient } from "../lib/atlas";
 import { assertFirstSearch, recordSearchResult } from "../lib/one-search";
+import { condenseSearch } from "../lib/search-output";
 
 export default defineTool({
   description:
@@ -15,7 +16,10 @@ export default defineTool({
 
     await recordSearchResult(context, "flight-search", result);
 
-    return result;
+    // Condensed, not raw — the missed copy of the same fix the other
+    // search tools got: a full routings payload in context is the
+    // single largest line in a search turn's token bill.
+    return condenseSearch(input, result);
   },
   inputSchema: z.object({
     adultNum: z
