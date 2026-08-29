@@ -5,7 +5,7 @@ export default defineEval({
   tags: ["live"],
   async test(t) {
     await t.send(
-      "Rank cheap one-way options from SIN to LHR on 2026-08-25 for 1 adult. Hand this to the routing specialist. Search fares only — do not export the full route catalog and do not book."
+      "Rank cheap one-way options from SIN to LHR on 2026-12-15 for 1 adult. Hand this to the routing specialist. Search fares only — do not export the full route catalog and do not book."
     );
     t.succeeded();
     t.calledSubagent("routing-agent");

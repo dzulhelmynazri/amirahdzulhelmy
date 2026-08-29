@@ -7,7 +7,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@atlas/ui/components/card";
-import { GoogleCalendar, GoogleMaps } from "@atlas/ui/components/socials";
+import {
+  Gmail,
+  GoogleCalendar,
+  GoogleMaps,
+} from "@atlas/ui/components/socials";
 import {
   Tooltip,
   TooltipContent,
@@ -31,6 +35,11 @@ const INTEGRATIONS = [
     icon: GoogleMaps,
     id: "google_maps",
     title: "Google Maps",
+  },
+  {
+    icon: Gmail,
+    id: "gmail",
+    title: "Gmail",
   },
 ] as const;
 

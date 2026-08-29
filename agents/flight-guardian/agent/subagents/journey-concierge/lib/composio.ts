@@ -1,4 +1,9 @@
-const JOURNEY_TOOLKITS = ["googlecalendar", "google_maps"] as const;
+/**
+ * Gmail is here because the instructions already told the agent to use it:
+ * hotel, rail and car confirmations arrive by email and never appear in a
+ * flight PNR. Read-only by policy — see the safety rules in instructions.md.
+ */
+const JOURNEY_TOOLKITS = ["googlecalendar", "google_maps", "gmail"] as const;
 
 const loadComposio = async () => {
   const { Composio } = await import("@composio/core");

@@ -14,7 +14,7 @@ export default defineEval({
     }
 
     const first = await t.send(
-      `Create a Google Calendar event titled "${CALENDAR_EVENT_TITLE}" on 2026-08-25 from 16:00 to 16:30 Europe/London. This message is my explicit confirmation to create that event now. Do not book a flight.`
+      `Create a Google Calendar event titled "${CALENDAR_EVENT_TITLE}" on 2026-12-15 from 16:00 to 16:30 Europe/London. This message is my explicit confirmation to create that event now. Do not book a flight.`
     );
 
     if (first.inputRequests.length > 0) {

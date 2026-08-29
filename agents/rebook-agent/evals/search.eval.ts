@@ -6,7 +6,7 @@ export default defineEval({
   tags: ["live"],
   async test(t) {
     await t.send(
-      "Search replacement one-way SIN to LHR flights on 2026-08-25 for 1 adult. Do not look up an existing order. Use flight-search. List options only — do not verify, create an order, void, refund, or take payment."
+      "Search replacement one-way SIN to LHR flights on 2026-12-15 for 1 adult. Do not look up an existing order. Use flight-search. List options only — do not verify, create an order, void, refund, or take payment."
     );
     t.succeeded();
     t.calledTool("flight-search");

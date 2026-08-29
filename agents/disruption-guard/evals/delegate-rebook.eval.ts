@@ -6,7 +6,7 @@ export default defineEval({
   tags: ["live"],
   async test(t) {
     await t.send(
-      "SQ321 SIN to LHR on 2026-08-25 was canceled. orderNo ATL1234567890, PNR ABCDEF, 1 adult. I want a replacement flight. Hand this to the rebook specialist with those details. Search options only — do not book, void, or refund. Do not call routing-agent or booking-agent."
+      "SQ321 SIN to LHR on 2026-12-15 was canceled. orderNo ATL1234567890, PNR ABCDEF, 1 adult. I want a replacement flight. Hand this to the rebook specialist with those details. Search options only — do not book, void, or refund. Do not call routing-agent or booking-agent."
     );
     t.succeeded();
     t.calledSubagent("rebook-agent");

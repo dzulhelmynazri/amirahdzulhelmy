@@ -4,8 +4,16 @@ import { z } from "zod";
 import { protectedProcedure, router } from "../index";
 import { getComposio } from "../lib/composio";
 
-/** Toolkits the integrations page actually offers. Keep this closed. */
-const toolkitSlugSchema = z.enum(["google_maps", "googlecalendar"]);
+/**
+ * Toolkits the integrations page actually offers. Keep this closed.
+ *
+ * `gmail` was named in journey-concierge's instructions and safety rules for
+ * months without ever being provisioned — the agent was told to read hotel and
+ * rail confirmations from an inbox it had no tool for. Those confirmations are
+ * where a multi-modal journey actually lives, so the promise is worth keeping
+ * rather than deleting.
+ */
+const toolkitSlugSchema = z.enum(["gmail", "google_maps", "googlecalendar"]);
 
 const isConnectedStatus = (status: string): boolean =>
   status === "ACTIVE" || status === "INITIATED";

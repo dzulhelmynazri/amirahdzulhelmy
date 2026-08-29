@@ -6,7 +6,7 @@ export default defineEval({
   tags: ["live"],
   async test(t) {
     await t.send(
-      "Search one-way fares from SIN to LHR on 2026-08-25 for 1 adult. I confirm those details. Use flight-search, not route-export. Rank a short cheap list. Do not book."
+      "Search one-way fares from SIN to LHR on 2026-12-15 for 1 adult. I confirm those details. Use flight-search, not route-export. Rank a short cheap list. Do not book."
     );
     t.succeeded();
     t.calledTool("flight-search");
