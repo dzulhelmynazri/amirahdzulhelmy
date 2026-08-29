@@ -27,20 +27,54 @@ export interface ParsedFareQuery {
   returnDate: string | null;
 }
 
-const SYSTEM = `You convert a traveller's freeform flight request into search criteria.
+const systemPrompt = (allowed: string[]) =>
+  `You convert a traveller's freeform flight request into search criteria.
 
 Return ONLY a JSON object, no fences, with exactly these keys:
-- "origin": IATA airport/city code, 3 uppercase letters. Pick the main international airport for a city ("KL"/"Kuala Lumpur" -> "KUL", "Tokyo" -> "TYO" or "NRT").
-- "destination": same format.
-- "departureDate": "YYYY-MM-DD". Resolve relative dates ("next Friday", "early October") against today's date given in the message. Never pick a past date.
-- "returnDate": "YYYY-MM-DD" or null for one-way. Only set it when a return is clearly implied.
+- "origin": one code from the allowed list below. Map cities to the airport that serves them ("KL"/"Kuala Lumpur" -> KUL, "Tokyo" -> HND, "Bali" -> DPS, "Saigon"/"Ho Chi Minh" -> SGN).
+- "destination": same, and never the same as origin.
+- "departureDate": "YYYY-MM-DD". Resolve relative dates ("next Friday", "early October") against today's date given in the message. Never pick a past date. When no date is given at all, choose one two weeks after today.
+- "returnDate": "YYYY-MM-DD" or null for one-way. A stay length counts as a return: "3 nights" means returnDate is 3 days after departureDate.
 - "adults": integer, default 1.
 - "children": integer, default 0.
 
-If the request is not a flight search or is missing an origin or destination you cannot reasonably infer, return {"error":"<one short sentence saying what is missing>"} instead.`;
+Allowed codes, and nothing else: ${allowed.join(", ")}.
+
+If the request is not a flight search, or names a place with no airport in that list, return {"error":"<one short sentence naming what is missing or unsupported>"} instead.`;
+
+/**
+ * Why this route cannot be used, or null when it can.
+ *
+ * An unsupported airport is worth explaining — the traveller named a real
+ * place we simply do not fly — while a malformed code is a model failure
+ * with nothing useful to say, so it stays a null parse.
+ */
+const routeProblem = (
+  origin: string,
+  destination: string,
+  allowed: string[]
+): { error: string } | null => {
+  const unsupported = [origin, destination].filter(
+    (code) => !allowed.includes(code)
+  );
+
+  if (unsupported.length > 0) {
+    return {
+      error: `We do not cover ${unsupported.join(" or ")} yet — pick another airport, or ask the agent for a wider search.`,
+    };
+  }
+
+  return origin === destination
+    ? {
+        error:
+          "Origin and destination came out the same — try naming both cities.",
+      }
+    : null;
+};
 
 const parseReply = (
-  raw: string
+  raw: string,
+  allowed: string[]
 ): ParsedFareQuery | { error: string } | null => {
   const start = raw.indexOf("{");
   const end = raw.lastIndexOf("}");
@@ -68,6 +102,13 @@ const parseReply = (
 
     if (!(IATA.test(origin) && IATA.test(destination))) {
       return null;
+    }
+
+    // The page can only render airports it knows, so a code outside the list
+    // would fill the form with nothing and look like a dead button.
+    const problem = routeProblem(origin, destination, allowed);
+    if (problem) {
+      return problem;
     }
     if (!ISO_DATE.test(departureDate)) {
       return null;
@@ -98,7 +139,8 @@ const parseReply = (
  */
 export const parseFareQuery = async (
   query: string,
-  todayIso: string
+  todayIso: string,
+  allowed: string[]
 ): Promise<ParsedFareQuery | { error: string } | null> => {
   const trimmed = query.slice(0, 500).trim();
   if (!trimmed) {
@@ -110,7 +152,7 @@ export const parseFareQuery = async (
       body: JSON.stringify({
         max_tokens: MAX_TOKENS,
         messages: [
-          { content: SYSTEM, role: "system" },
+          { content: systemPrompt(allowed), role: "system" },
           {
             content: `Today is ${todayIso}.\n\nRequest: ${trimmed}`,
             role: "user",
@@ -136,7 +178,7 @@ export const parseFareQuery = async (
     };
     const content = body.choices?.[0]?.message?.content;
 
-    return typeof content === "string" ? parseReply(content) : null;
+    return typeof content === "string" ? parseReply(content, allowed) : null;
   } catch {
     return null;
   }

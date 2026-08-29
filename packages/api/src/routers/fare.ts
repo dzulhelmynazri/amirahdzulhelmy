@@ -535,12 +535,22 @@ export const fareRouter = router({
    * whether to actually run the search with what came back.
    */
   parse: protectedProcedure
-    .input(z.object({ query: z.string().min(3).max(500) }))
+    .input(
+      z.object({
+        /**
+         * The airports the page can actually render. Sent by the client
+         * because that list lives with the picker; a code outside it fills
+         * the form with nothing and reads as a dead button.
+         */
+        allowed: z.array(iata("Airport")).min(1).max(200),
+        query: z.string().min(3).max(500),
+      })
+    )
     .mutation(async ({ input }) => {
       const today = new Intl.DateTimeFormat("en-CA", {
         timeZone: "Asia/Kuala_Lumpur",
       }).format(new Date());
-      const parsed = await parseFareQuery(input.query, today);
+      const parsed = await parseFareQuery(input.query, today, input.allowed);
 
       if (parsed === null) {
         return {

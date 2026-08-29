@@ -10,6 +10,10 @@ import { trpc } from "@/utils/trpc";
 
 import type { RecentSearch } from "./fare-search-context";
 import { useFareSearch } from "./fare-search-context";
+import { airportByCode, airports } from "./fares-data";
+
+/** Only real airports; the same file also carries airline codes. */
+const AIRPORT_CODES = airports.map((airport) => airport.code);
 
 /**
  * The AI row inside the search card: one sentence instead of six fields.
@@ -31,6 +35,18 @@ export const AiSearch = () => {
           setError(result.error);
           return;
         }
+        // The replay path fills the form and runs it, but silently does
+        // nothing when a code is not one the picker knows — which reads as a
+        // dead button. Check here so there is always a visible outcome.
+        const known =
+          airportByCode.has(result.criteria.origin) &&
+          airportByCode.has(result.criteria.destination);
+
+        if (!known) {
+          setError("We do not cover that route yet — try another city.");
+          return;
+        }
+
         setError(null);
         setQuery("");
         // Reuses the recent-search replay path so AI criteria go through the
@@ -53,7 +69,7 @@ export const AiSearch = () => {
       return;
     }
     setError(null);
-    parse.mutate({ query: trimmed });
+    parse.mutate({ allowed: AIRPORT_CODES, query: trimmed });
   };
 
   return (
