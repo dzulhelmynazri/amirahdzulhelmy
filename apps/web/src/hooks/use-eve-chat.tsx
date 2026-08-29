@@ -30,6 +30,13 @@ const AGENT_NAME = "flight-guardian";
 const STORAGE_KEY = "atlas:eve:flight-guardian:v1";
 const CHANGE_EVENT = "atlas-eve-chat-change";
 
+/**
+ * Roughly the last dozen turns of a busy conversation. Enough to reopen a
+ * chat with its recent shape intact; the durable stream on the server holds
+ * the rest and the reattach cursor can always replay it.
+ */
+const MAX_PERSISTED_EVENTS = 400;
+
 interface SavedEveChat {
   events?: readonly MessageStreamEvent[];
   session?: ClientSessionState;
@@ -260,8 +267,17 @@ const EveChatSession = ({
       events: readonly MessageStreamEvent[];
       session: ClientSessionState | undefined;
     }) => {
+      /**
+       * The tail, not the whole log. A booking conversation's full event
+       * stream grew past the server action's body limit and every save after
+       * that failed — history quietly stopped existing for the busiest
+       * conversations, which are exactly the ones worth keeping. The server
+       * session remains the durable full record; this is the reopen-payload.
+       */
+      const events = snapshot.events.slice(-MAX_PERSISTED_EVENTS);
+
       persistSavedChat({
-        events: snapshot.events,
+        events,
         session: snapshot.session,
       });
 
@@ -273,7 +289,7 @@ const EveChatSession = ({
       if (sessionId) {
         void saveConversation({
           firstMessage: firstUserMessage(snapshot.events),
-          payload: { events: snapshot.events, session: snapshot.session },
+          payload: { events, session: snapshot.session },
           sessionId,
         });
       }

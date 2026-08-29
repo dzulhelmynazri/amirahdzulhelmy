@@ -8,9 +8,16 @@ import { DetailsSheet } from "@/components/bookings/details-sheet";
 import { trpc } from "@/utils/trpc";
 
 export default function BookingsPage() {
-  const { data: bookings = [], isLoading } = useQuery(
-    trpc.booking.list.queryOptions()
-  );
+  const { data: bookings = [], isLoading } = useQuery({
+    ...trpc.booking.list.queryOptions(),
+    /**
+     * The agent panel books while this page sits open beside it, and a page
+     * that only fetches on mount showed "No bookings yet" seconds after an
+     * order was created. Fifteen seconds is fast enough to feel live and slow
+     * enough to cost nothing.
+     */
+    refetchInterval: 15_000,
+  });
 
   return (
     <div className="p-4 sm:p-6">
