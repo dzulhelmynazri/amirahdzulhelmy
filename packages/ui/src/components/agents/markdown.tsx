@@ -44,10 +44,19 @@ export const Markdown = ({
       "[&_code]:rounded [&_code]:bg-muted [&_code]:px-1 [&_code]:py-0.5 [&_code]:text-xs",
       "[&_hr]:border-border",
       "[&_blockquote]:border-border [&_blockquote]:border-l-2 [&_blockquote]:pl-3 [&_blockquote]:text-muted-foreground",
+      // Opaque ids and long URLs are common here and have no break
+      // opportunities, so they escape the bubble unless told to break anywhere.
+      "[overflow-wrap:anywhere]",
+      "[&_pre]:overflow-x-auto [&_pre]:rounded [&_pre]:bg-muted [&_pre]:p-3",
+      "[&_pre_code]:bg-transparent [&_pre_code]:p-0",
       // Tables carry fare comparisons, so they scroll rather than squeeze.
-      "[&_table]:block [&_table]:w-full [&_table]:overflow-x-auto [&_table]:text-xs",
-      "[&_th]:px-2 [&_th]:py-1 [&_th]:text-left [&_th]:font-medium",
-      "[&_td]:px-2 [&_td]:py-1",
+      // Borders are not decoration: without them rows and columns read as
+      // floating words, which is how a fare table becomes unreadable.
+      "[&_table]:block [&_table]:w-full [&_table]:overflow-x-auto [&_table]:border-collapse [&_table]:text-xs",
+      "[&_thead]:border-border [&_thead]:border-b",
+      "[&_th]:whitespace-nowrap [&_th]:px-2 [&_th]:py-1.5 [&_th]:text-left [&_th]:font-medium",
+      "[&_tbody_tr]:border-border/60 [&_tbody_tr]:border-b [&_tbody_tr:last-child]:border-0",
+      "[&_td]:px-2 [&_td]:py-1.5 [&_td]:align-top",
       className
     )}
     mode={streaming ? "streaming" : "static"}

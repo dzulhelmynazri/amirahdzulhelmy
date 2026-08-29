@@ -594,7 +594,15 @@ export const AtlasAgentMessageBody = ({
     return (
       <MessageBubble animateIn={isLast} variant="solid">
         <MessageBubbleContent>
-          {userText(message)}
+          {/*
+            What the traveller typed, kept as they typed it. Rendered as one
+            run-on paragraph before this: a pasted itinerary lost every line
+            break, and an opaque routingIdentifier — one unbroken 80-character
+            token — ran straight out of the bubble.
+          */}
+          <span className="block whitespace-pre-wrap [overflow-wrap:anywhere]">
+            {userText(message)}
+          </span>
           {files.length > 0 ? (
             <p className="mt-2 text-muted-foreground text-xs">
               {files.join(", ")}
