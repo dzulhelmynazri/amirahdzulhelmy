@@ -53,6 +53,7 @@ import {
 } from "lucide-react";
 import type { FormEvent } from "react";
 
+import { AiSearch } from "./ai-search";
 import { useFareSearch } from "./fare-search-context";
 import {
   airportLabel,
@@ -446,6 +447,7 @@ export const FareSearchForm = ({ onSearched }: { onSearched?: () => void }) => {
         </CardHeader>
 
         <CardContent>
+          <AiSearch />
           <div>
             <AirportPanel
               airport={origin}

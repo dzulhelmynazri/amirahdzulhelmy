@@ -12,12 +12,12 @@ import type { RecentSearch } from "./fare-search-context";
 import { useFareSearch } from "./fare-search-context";
 
 /**
- * The AI mode of the fares page: one sentence instead of six fields.
+ * The AI row inside the search card: one sentence instead of six fields.
  *
  * A small model turns "KL to Tokyo next Friday, 2 adults" into criteria and
- * the page runs the same search the form would — so the results, history and
- * saved fares all behave identically whichever mode filled them in. Parsing
- * failures surface as one quiet line, never a blocked form.
+ * fills the same form the traveller sees — so results, history and saved
+ * fares behave identically whichever mode filled them in. Not a <form>:
+ * it renders inside the search form, and nested forms are invalid HTML.
  */
 export const AiSearch = () => {
   const { applyRecentSearch } = useFareSearch();
@@ -32,6 +32,7 @@ export const AiSearch = () => {
           return;
         }
         setError(null);
+        setQuery("");
         // Reuses the recent-search replay path so AI criteria go through the
         // exact same fill-and-run behaviour as a clicked history row.
         applyRecentSearch({
@@ -56,30 +57,33 @@ export const AiSearch = () => {
   };
 
   return (
-    <div className="flex flex-col gap-2">
-      <form
-        className="flex items-center gap-2 rounded-2xl border bg-primary/5 p-2"
-        onSubmit={(event) => {
-          event.preventDefault();
-          submit();
-        }}
-      >
+    <div className="flex flex-col gap-1">
+      <div className="flex items-center gap-2 rounded-xl bg-muted/50 p-1.5">
         <Sparkles className="ml-2 size-4 shrink-0 text-primary" />
         <Input
-          className="border-0 bg-transparent shadow-none focus-visible:ring-0"
+          className="h-8 border-0 bg-transparent shadow-none focus-visible:ring-0"
           onChange={(event) => setQuery(event.target.value)}
-          placeholder='Try "KL to Tokyo next Friday, 2 adults"'
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              event.preventDefault();
+              submit();
+            }
+          }}
+          placeholder='Ask AI — "KL to Tokyo next Friday, 2 adults"'
           value={query}
         />
         <Button
-          className="shrink-0 rounded-full"
+          className="shrink-0 rounded-lg"
           disabled={parse.isPending || query.trim().length < 3}
-          type="submit"
+          onClick={submit}
+          size="sm"
+          type="button"
+          variant="secondary"
         >
-          {parse.isPending ? "Reading…" : "Search"}
+          {parse.isPending ? "Reading…" : "Fill"}
         </Button>
-      </form>
-      {error && <p className="px-2 text-muted-foreground text-sm">{error}</p>}
+      </div>
+      {error && <p className="px-2 text-muted-foreground text-xs">{error}</p>}
     </div>
   );
 };

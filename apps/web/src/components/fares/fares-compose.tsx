@@ -1,20 +1,18 @@
 "use client";
 
-import { FareIdleState } from "./fare-idle-state";
 import { FareSearchProvider } from "./fare-search-context";
 import { FareSearchForm } from "./fare-search-form";
 
 /**
- * The idle sections (AI search, recent searches, popular routes) existed but
- * nothing rendered them — the page was only ever the form. They live under
- * it: the form stays the anchor, the shortcuts earn their keep below.
+ * Just the form, centered. A stacked pile of shortcut cards under it was
+ * tried and read as clutter — the AI entry lives inside the search card
+ * instead, so the page keeps a single anchor.
  */
 export const FaresCompose = () => (
   <FareSearchProvider source="form">
-    <div className="flex flex-1 justify-center py-8">
-      <div className="flex w-full max-w-lg flex-col gap-6">
+    <div className="flex flex-1 items-center justify-center">
+      <div className="w-full max-w-lg">
         <FareSearchForm />
-        <FareIdleState />
       </div>
     </div>
   </FareSearchProvider>
