@@ -21,7 +21,7 @@ export interface SearchToolInput {
   adultNum?: number;
   airlines?: string[];
   childNum?: number;
-  currency?: string;
+  currency?: string | null;
   fromCity?: string;
   fromDate?: string;
   infantNum?: number;
