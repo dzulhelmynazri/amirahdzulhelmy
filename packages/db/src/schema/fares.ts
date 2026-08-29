@@ -38,6 +38,11 @@ export const fareSearch = pgTable(
     /** How many fares came back. Zero is a useful signal, not a failure. */
     resultCount: integer("result_count").notNull().default(0),
     returnDate: text("return_date"),
+    /**
+     * "manual" for the /fares form, "agent" when an AI search tool ran it.
+     * Lets the page show where a search came from without a join.
+     */
+    source: text("source").notNull().default("manual"),
     /** "one-way" | "round-trip". */
     tripType: text("trip_type").notNull(),
     userId: text("user_id")

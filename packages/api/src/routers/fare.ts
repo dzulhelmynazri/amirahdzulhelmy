@@ -578,6 +578,7 @@ export const fareRouter = router({
       origin: string;
       resultCount: number;
       returnDate: string | null;
+      source: string;
     }[] = [];
 
     for (const row of rows) {
@@ -602,6 +603,7 @@ export const fareRouter = router({
         origin: row.origin,
         resultCount: row.resultCount,
         returnDate: row.returnDate,
+        source: row.source,
       });
 
       if (recent.length === RECENT_SHOWN) {

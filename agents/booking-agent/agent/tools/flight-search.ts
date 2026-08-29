@@ -3,6 +3,7 @@ import { defineTool } from "eve/tools";
 import { z } from "zod";
 
 import { getAtlasClient } from "../lib/atlas";
+import { persistFareSearch } from "../lib/fare-history";
 import { assertFirstSearch, recordSearchResult } from "../lib/one-search";
 
 /**
@@ -55,6 +56,10 @@ export default defineTool({
     const cheapestFirst = [...fares].sort(
       (a, b) => a.adultTotal - b.adultTotal
     );
+
+    // Mirror the search into the /fares history so the page shows what the
+    // agent looked up, replayable like any manual search.
+    await persistFareSearch(context, input, fares.length);
 
     return {
       fares: cheapestFirst.slice(0, MAX_FARES_RETURNED).map((fare) => ({

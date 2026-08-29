@@ -3,7 +3,7 @@
 import { Button } from "@atlas/ui/components/button";
 import { formatShortDate } from "@atlas/utils/date";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, History } from "lucide-react";
+import { ArrowRight, History, Sparkles } from "lucide-react";
 
 import { trpc } from "@/utils/trpc";
 
@@ -30,7 +30,12 @@ const cityName = (code: string) => airportByCode.get(code)?.city ?? code;
  */
 export const RecentSearches = () => {
   const { applyRecentSearch, results } = useFareSearch();
-  const { data: rows = [] } = useQuery(trpc.fare.recent.queryOptions());
+  const { data: rows = [] } = useQuery({
+    ...trpc.fare.recent.queryOptions(),
+    // The agent panel searches while this page sits open beside it; without a
+    // refetch its searches only appear after a reload.
+    refetchInterval: 15_000,
+  });
 
   if (rows.length === 0 || results.hasSearched) {
     return null;
@@ -65,7 +70,13 @@ export const RecentSearches = () => {
                 {formatDates(search)}
               </span>
             </span>
-            <span className="shrink-0 text-muted-foreground text-sm">
+            <span className="flex shrink-0 items-center gap-2 text-muted-foreground text-sm">
+              {search.source === "agent" && (
+                <span className="flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-primary text-xs">
+                  <Sparkles className="size-3" />
+                  AI
+                </span>
+              )}
               {search.resultCount === 0
                 ? "no fares last time"
                 : `${search.resultCount} fares`}

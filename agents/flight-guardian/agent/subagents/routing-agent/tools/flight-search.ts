@@ -2,6 +2,7 @@ import { defineTool } from "eve/tools";
 import { z } from "zod";
 
 import { getAtlasClient } from "../lib/atlas";
+import { persistFareSearch } from "../lib/fare-history";
 import { assertFirstSearch, recordSearchResult } from "../lib/one-search";
 import { condenseSearch } from "../lib/search-output";
 
@@ -16,10 +17,18 @@ export default defineTool({
 
     await recordSearchResult(context, "flight-search", result);
 
+    const condensed = condenseSearch(input, result);
+
+    // Mirror the search into the /fares history so the page shows what the
+    // agent looked up, replayable like any manual search.
+    if (condensed.status === undefined || condensed.status === 0) {
+      await persistFareSearch(context, input, condensed.totalFound ?? 0);
+    }
+
     // Condensed, not raw — the missed copy of the same fix the other
     // search tools got: a full routings payload in context is the
     // single largest line in a search turn's token bill.
-    return condenseSearch(input, result);
+    return condensed;
   },
   inputSchema: z.object({
     adultNum: z
