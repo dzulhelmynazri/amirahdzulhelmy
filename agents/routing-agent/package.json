@@ -10,7 +10,7 @@
     "build": "eve build",
     "check-types": "tsc --noEmit",
     "dev": "eve dev",
-    "eval": "eve eval --url http://localhost:3001/eve/agents/routing-agent",
+    "eval": "eve eval",
     "start": "eve start",
     "typecheck": "tsc"
   },
