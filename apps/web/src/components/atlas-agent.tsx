@@ -22,6 +22,7 @@ import { useCallback, useState } from "react";
 import type { PendingSuggestions } from "@/components/atlas-agent-message";
 import {
   AtlasAgentMessageBody,
+  hasPendingInput,
   pendingSubagent,
   pendingSuggestions,
 } from "@/components/atlas-agent-message";
@@ -184,6 +185,7 @@ const AgentMessages = ({
 };
 
 const AgentComposer = ({
+  awaitingAnswer,
   draft,
   errorMessage,
   generated,
@@ -195,6 +197,7 @@ const AgentComposer = ({
   ready,
   suggestions,
 }: {
+  awaitingAnswer: boolean;
   draft: string;
   errorMessage?: string;
   generated: readonly string[];
@@ -243,7 +246,7 @@ const AgentComposer = ({
         Sent straight away rather than parked in the box: a tap that then
         needs a second tap on Send is not one tap.
       */}
-      {!(suggestions || isBusy) && generated.length > 0 ? (
+      {!(suggestions || isBusy || awaitingAnswer) && generated.length > 0 ? (
         <Suggestions
           items={generated.map((label) => ({ id: label, label }))}
           onSelect={(item) => handleSubmit(item.label)}
@@ -325,7 +328,14 @@ export const AtlasAgent = () => {
    * the model call from running for a turn nobody is waiting on an idea for.
    */
   const suggestions = pendingSuggestions(messages);
-  const generated = useFollowUps(messages, !(isBusy || suggestions));
+  // Any live question or approval silences the generated pills — including
+  // freeform-only questions, which carry no options for `suggestions` to see.
+  // The card has its own input; pills beside it are a second conversation.
+  const awaitingAnswer = hasPendingInput(messages);
+  const generated = useFollowUps(
+    messages,
+    !(isBusy || suggestions || awaitingAnswer)
+  );
 
   const handleStop = useCallback(() => {
     void cancel();
@@ -381,6 +391,7 @@ export const AtlasAgent = () => {
               isFullWidth={isFullWidth}
               onStop={handleStop}
               onSubmit={handleSubmit}
+              awaitingAnswer={awaitingAnswer}
               generated={generated}
               ready={ready}
               suggestions={suggestions}

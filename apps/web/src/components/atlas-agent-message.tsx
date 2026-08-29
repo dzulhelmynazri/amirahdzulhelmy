@@ -373,6 +373,28 @@ export interface PendingSuggestions {
  * an answer produces confident nonsense — a tap that leads somewhere the agent
  * cannot act is worse than no tap at all.
  */
+/**
+ * True while any question or approval is still waiting for an answer.
+ *
+ * Broader than `pendingSuggestions` on purpose. That extractor only sees
+ * questions carrying options, and a freeform-only "where would you like to
+ * fly?" card slipped past it — generated pills rendered underneath, and
+ * tapping one sent a fresh message while the question stood, so the agent
+ * asked the same thing twice. Any live request means the pills stay away.
+ */
+export const hasPendingInput = (messages: readonly EveMessage[]): boolean => {
+  const last = messages.at(-1);
+
+  if (last?.role !== "assistant") {
+    return false;
+  }
+
+  return last.parts.some(
+    (part) =>
+      part.type === "dynamic-tool" && part.state === "approval-requested"
+  );
+};
+
 export const pendingSuggestions = (
   messages: readonly EveMessage[]
 ): PendingSuggestions | undefined => {
