@@ -17,6 +17,14 @@ export const createStorage = () =>
         secretAccessKey: env.S3_SECRET_ACCESS_KEY,
       },
       endpoint: env.S3_ENDPOINT,
+      /**
+       * Neon Object Storage serves one certificate per branch host, so the
+       * default virtual-hosted style — `https://<bucket>.<host>/key` — fails
+       * TLS with ERR_TLS_CERT_ALTNAME_INVALID before a request is even sent.
+       * Path style keeps the bucket in the path, where the certificate the
+       * endpoint actually presents still matches.
+       */
+      forcePathStyle: true,
       region: env.S3_REGION,
     }),
     plugins: [
