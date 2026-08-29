@@ -5,54 +5,64 @@
  * being called, which is why the app could only poll. Run this once per
  * environment after deploying, and again whenever the public URL changes.
  *
- *   bun run webhook:register
+ *   bun run --filter @atlas/atlas-client webhook:register
  *
  * Credentials and the shared token come from the environment, never argv —
  * a secret on a command line ends up in shell history.
  */
 
-const apiUrl = process.env.ATLAS_API_URL;
-const clientId = process.env.ATLAS_CLIENT_ID;
-const clientSecret = process.env.ATLAS_CLIENT_SECRET;
-const appUrl = process.env.NEXT_PUBLIC_APP_URL;
-const token = process.env.ATLAS_WEBHOOK_TOKEN;
+const ATLAS_STATUS_OK = 0;
 
-const missing = [
-  ["ATLAS_API_URL", apiUrl],
-  ["ATLAS_CLIENT_ID", clientId],
-  ["ATLAS_CLIENT_SECRET", clientSecret],
-  ["NEXT_PUBLIC_APP_URL", appUrl],
-  ["ATLAS_WEBHOOK_TOKEN", token],
-]
-  .filter(([, value]) => !value)
-  .map(([name]) => name);
+const main = async (): Promise<number> => {
+  const apiUrl = process.env.ATLAS_API_URL;
+  const clientId = process.env.ATLAS_CLIENT_ID;
+  const clientSecret = process.env.ATLAS_CLIENT_SECRET;
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+  const token = process.env.ATLAS_WEBHOOK_TOKEN;
 
-if (missing.length > 0) {
-  process.stderr.write(`Missing environment: ${missing.join(", ")}\n`);
-  process.exit(1);
-}
+  const missing = [
+    ["ATLAS_API_URL", apiUrl],
+    ["ATLAS_CLIENT_ID", clientId],
+    ["ATLAS_CLIENT_SECRET", clientSecret],
+    ["NEXT_PUBLIC_APP_URL", appUrl],
+    ["ATLAS_WEBHOOK_TOKEN", token],
+  ]
+    .filter(([, value]) => !value)
+    .map(([name]) => name);
 
-const callback = `${appUrl}/api/webhooks/atlas?token=${token}`;
+  if (missing.length > 0) {
+    process.stderr.write(`Missing environment: ${missing.join(", ")}\n`);
+    return 1;
+  }
 
-const response = await fetch(`${apiUrl}/updateWebhookURL.do`, {
-  body: JSON.stringify({ url: callback }),
-  headers: {
-    Accept: "application/json",
-    "Accept-Encoding": "gzip",
-    "Content-Type": "application/json",
-    "x-atlas-client-id": clientId as string,
-    "x-atlas-client-secret": clientSecret as string,
-  },
-  method: "POST",
-});
+  const callback = `${appUrl}/api/webhooks/atlas?token=${token}`;
 
-const body = (await response.json()) as {
-  msg?: string | null;
-  status?: number;
+  const response = await fetch(`${apiUrl}/updateWebhookURL.do`, {
+    body: JSON.stringify({ url: callback }),
+    headers: {
+      Accept: "application/json",
+      "Accept-Encoding": "gzip",
+      "Content-Type": "application/json",
+      "x-atlas-client-id": clientId as string,
+      "x-atlas-client-secret": clientSecret as string,
+    },
+    method: "POST",
+  });
+
+  const body = (await response.json()) as {
+    msg?: string | null;
+    status?: number;
+  };
+  const ok = body.status === ATLAS_STATUS_OK;
+
+  process.stdout.write(
+    `${ok ? "registered" : "failed"}: ${callback}\nstatus ${body.status} ${body.msg ?? ""}\n`
+  );
+
+  return ok ? 0 : 1;
 };
 
-process.stdout.write(
-  `${body.status === 0 ? "registered" : "failed"}: ${callback}\nstatus ${body.status} ${body.msg ?? ""}\n`
-);
+const exitCode = await main();
+process.exit(exitCode);
 
-process.exit(body.status === 0 ? 0 : 1);
+
