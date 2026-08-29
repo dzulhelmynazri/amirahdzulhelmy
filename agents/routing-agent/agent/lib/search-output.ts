@@ -33,7 +33,6 @@ interface AtlasSearchResponse {
   msg: string | null;
   routings?: unknown;
   status: number;
-  [key: string]: unknown;
 }
 
 /**
