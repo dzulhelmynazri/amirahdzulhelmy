@@ -13,7 +13,7 @@
 
 const ATLAS_STATUS_OK = 0;
 
-const main = async (): Promise<number> => {
+export const registerWebhook = async (): Promise<number> => {
   const apiUrl = process.env.ATLAS_API_URL;
   const clientId = process.env.ATLAS_CLIENT_ID;
   const clientSecret = process.env.ATLAS_CLIENT_SECRET;
@@ -62,7 +62,5 @@ const main = async (): Promise<number> => {
   return ok ? 0 : 1;
 };
 
-const exitCode = await main();
+const exitCode = await registerWebhook();
 process.exit(exitCode);
-
-
