@@ -7,16 +7,12 @@ const SPECIALISTS = {
     "Books new flights end-to-end: search, verify, optional seats or bags, create order, confirm, pay, and track. Use for first-time bookings, not disruption recovery.",
   "disruption-guard":
     "Monitors booked trips for delays, cancellations, and schedule changes, then explains what changed. Does not rebook or refund.",
-  "flight-guardian":
-    "Atlas front door. Routes booking, rebooking, routing and concierge work to its internal specialists. Send it a complete task message.",
   "journey-concierge":
     "Connects flights to ground transport, hotel timing, Gmail, Calendar, and Maps. Does not book or rebook flights.",
   "rebook-agent":
     "Recovers disrupted trips: search replacements, book a new order, then void or refund the original. Use after a delay or cancellation.",
   "routing-agent":
     "Finds alternative routes, connections, airports, and dates. Read-only. Returns a routingIdentifier for booking-agent or rebook-agent.",
-  "travel-sentinel":
-    "Destination intelligence: news, safety alerts, weather events, transit disruptions, and travel advisories for upcoming trip destinations. Does not book or rebook flights.",
 } as const;
 
 export type AtlasSpecialist = keyof typeof SPECIALISTS;

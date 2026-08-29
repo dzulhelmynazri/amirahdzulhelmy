@@ -1,0 +1,19 @@
+# Build artifacts and caches — Vercel rebuilds from source
+.next
+**/.next
+node_modules
+**/node_modules
+.turbo
+**/.turbo
+.eve
+**/.eve
+
+# Agent-tooling junk that has no business in a deployment
+.qoder
+.agents
+.playwright-mcp
+.cursor
+.claude
+.hackhaton
+.plan
+docs

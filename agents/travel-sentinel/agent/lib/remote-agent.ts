@@ -7,6 +7,8 @@ const SPECIALISTS = {
     "Books new flights end-to-end: search, verify, optional seats or bags, create order, confirm, pay, and track. Use for first-time bookings, not disruption recovery.",
   "disruption-guard":
     "Monitors booked trips for delays, cancellations, and schedule changes, then explains what changed. Does not rebook or refund.",
+  "flight-guardian":
+    "Atlas front door. Routes booking, rebooking, routing and concierge work to its internal specialists. Send it a complete task message.",
   "journey-concierge":
     "Connects flights to ground transport, hotel timing, Gmail, Calendar, and Maps. Does not book or rebook flights.",
   "rebook-agent":

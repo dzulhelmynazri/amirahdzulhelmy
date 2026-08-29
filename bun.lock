@@ -68,6 +68,8 @@
         "@atlas/atlas-client": "workspace:*",
         "@atlas/auth": "workspace:*",
         "@atlas/db": "workspace:*",
+        "@composio/core": "^0.16.0",
+        "@composio/experimental": "^0.2.2",
         "@upstash/agentkit-sdk": "^0.6.0",
         "@upstash/redis": "^1.38.2",
         "@vercel/connect": "0.4.3",
