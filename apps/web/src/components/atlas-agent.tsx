@@ -9,6 +9,7 @@ import {
   MessageScroller,
 } from "@atlas/ui/components/agents/message";
 import { PromptInput } from "@atlas/ui/components/agents/prompt-input";
+import { Suggestions } from "@atlas/ui/components/agents/suggestions";
 import { Button } from "@atlas/ui/components/button";
 import { Kbd, KbdGroup } from "@atlas/ui/components/kbd";
 import { cn } from "@atlas/ui/lib/utils";
@@ -18,13 +19,16 @@ import { SquarePen, User, XIcon } from "lucide-react";
 import Image from "next/image";
 import { useCallback, useState } from "react";
 
+import type { PendingSuggestions } from "@/components/atlas-agent-message";
 import {
   AtlasAgentMessageBody,
   pendingSubagent,
+  pendingSuggestions,
 } from "@/components/atlas-agent-message";
 import { ChatHistory } from "@/components/chat-history";
 import { useAgentSidebarSync } from "@/hooks/use-agent-panel";
 import { useEveChat } from "@/hooks/use-eve-chat";
+import { useFollowUps } from "@/hooks/use-follow-ups";
 
 const AGENT_NAME = "Flight Guardian";
 
@@ -182,21 +186,25 @@ const AgentMessages = ({
 const AgentComposer = ({
   draft,
   errorMessage,
+  generated,
   isBusy,
   isEmpty,
   isFullWidth,
   onStop,
   onSubmit,
   ready,
+  suggestions,
 }: {
   draft: string;
   errorMessage?: string;
+  generated: readonly string[];
   isBusy: boolean;
   isEmpty: boolean;
   isFullWidth: boolean;
   onStop: () => void;
   onSubmit: (text: string) => void;
   ready: boolean;
+  suggestions?: PendingSuggestions;
 }) => {
   const [value, setValue] = useState("");
   const [lastDraft, setLastDraft] = useState(draft);
@@ -221,6 +229,26 @@ const AgentComposer = ({
 
   return (
     <div className="flex shrink-0 flex-col gap-3 p-4">
+      {/*
+        Only when the agent asked nothing.
+        
+
+        Pills used to render for a live `ask_question` too, which put the same
+        five options on screen twice — once as radio buttons in the card, once
+        as pills underneath it. The card already carries its own input and
+        submit, so it needs no help. These are for the far commoner case where
+        the agent ended in prose and offered nothing at all.
+        
+
+        Sent straight away rather than parked in the box: a tap that then
+        needs a second tap on Send is not one tap.
+      */}
+      {!(suggestions || isBusy) && generated.length > 0 ? (
+        <Suggestions
+          items={generated.map((label) => ({ id: label, label }))}
+          onSelect={(item) => handleSubmit(item.label)}
+        />
+      ) : null}
       {isEmpty ? (
         <>
           <div className="flex flex-col items-start gap-1.5">
@@ -289,6 +317,16 @@ export const AtlasAgent = () => {
     [send, setDraft]
   );
 
+  /**
+   * A live question suppresses the generated pills entirely.
+   *
+   * The card it renders already states the choices and carries its own input,
+   * so pills beneath it were the same options a second time. This also keeps
+   * the model call from running for a turn nobody is waiting on an idea for.
+   */
+  const suggestions = pendingSuggestions(messages);
+  const generated = useFollowUps(messages, !(isBusy || suggestions));
+
   const handleStop = useCallback(() => {
     void cancel();
   }, [cancel]);
@@ -343,7 +381,9 @@ export const AtlasAgent = () => {
               isFullWidth={isFullWidth}
               onStop={handleStop}
               onSubmit={handleSubmit}
+              generated={generated}
               ready={ready}
+              suggestions={suggestions}
             />
           </div>
         </div>
