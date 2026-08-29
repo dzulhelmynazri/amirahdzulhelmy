@@ -12,7 +12,7 @@ export default defineConfig({
       // slug — `read_file.ts`, `write_file.ts` — and fails the build on any
       // other name. The kebab-case rule loses to that contract in this one
       // directory.
-      files: ["agents/*/agent/tools/*_*.ts"],
+      files: ["agents/*/agent/**/tools/*_*.ts"],
       rules: {
         "unicorn/filename-case": "off",
       },
