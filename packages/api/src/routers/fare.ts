@@ -8,6 +8,7 @@ import { z } from "zod";
 
 import { protectedProcedure, router } from "../index";
 import { getAtlasClient } from "../lib/atlas";
+import { parseFareQuery } from "../lib/fare-parse";
 
 /** Atlas convention: status 0 on a response means the request succeeded. */
 const ATLAS_STATUS_OK = 0;
@@ -527,6 +528,32 @@ export const fareRouter = router({
     .mutation(({ ctx, input }) =>
       searchNearbyDates(ctx.session.user.id, input)
     ),
+
+  /**
+   * The AI mode of the /fares page: freeform text in, search criteria out.
+   * Parsing costs a small model call, not Atlas quota — the client decides
+   * whether to actually run the search with what came back.
+   */
+  parse: protectedProcedure
+    .input(z.object({ query: z.string().min(3).max(500) }))
+    .mutation(async ({ input }) => {
+      const today = new Intl.DateTimeFormat("en-CA", {
+        timeZone: "Asia/Kuala_Lumpur",
+      }).format(new Date());
+      const parsed = await parseFareQuery(input.query, today);
+
+      if (parsed === null) {
+        return {
+          criteria: null,
+          error:
+            "Couldn't read that as a flight search — try naming the route and date.",
+        };
+      }
+      if ("error" in parsed) {
+        return { criteria: null, error: parsed.error };
+      }
+      return { criteria: parsed, error: null };
+    }),
 
   /**
    * Routes this traveller actually searched, ranked by how often.

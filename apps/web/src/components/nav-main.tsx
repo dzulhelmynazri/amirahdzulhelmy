@@ -17,28 +17,32 @@ import {
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+/**
+ * Ordered by the traveller's journey: find a fare, book it, plan the trip,
+ * watch for trouble, then the plumbing. Icons follow the noun — tickets for
+ * bookings, a calendar for trips — not the other way round.
+ */
 const data = {
   navMain: [
     {
-      icon: <SquareActivity />,
-      title: "Activity",
-      url: "/activity",
-    },
-
-    {
-      icon: <TicketsPlane />,
+      icon: <Plane />,
       title: "Fares",
       url: "/fares",
     },
     {
-      icon: <Calendar />,
+      icon: <TicketsPlane />,
       title: "Bookings",
       url: "/bookings",
     },
     {
-      icon: <Plane />,
+      icon: <Calendar />,
       title: "Trips",
       url: "/trips",
+    },
+    {
+      icon: <SquareActivity />,
+      title: "Activity",
+      url: "/activity",
     },
     {
       icon: <ToyBrick />,

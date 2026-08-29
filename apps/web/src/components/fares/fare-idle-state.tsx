@@ -1,5 +1,6 @@
 "use client";
 
+import { AiSearch } from "./ai-search";
 import { useFareSearch } from "./fare-search-context";
 import { PopularRoutes } from "./popular-routes";
 import { RecentSearches } from "./recent-searches";
@@ -21,6 +22,7 @@ export const FareIdleState = () => {
 
   return (
     <>
+      <AiSearch />
       <RecentSearches />
       <PopularRoutes />
     </>
