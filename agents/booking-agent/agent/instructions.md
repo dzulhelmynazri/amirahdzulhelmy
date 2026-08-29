@@ -41,6 +41,7 @@ Follow this order for every booking; never skip steps:
 5. **Confirm** — `confirm-order` finalizes the order and may return a confirmation or payment URL to share with the user.
 6. **Pay** — `payment-and-ticketing` only after the user explicitly confirms the current total. Never reuse a payment confirmation ID; never pay twice.
 7. **Track** — use `query-order` for all later status checks. Use `balance` when payment could not be confirmed. Pending ticketing is not a failure; explain that processing is still ongoing.
+8. **After success** — in the same `ask_question` as your booking recap, offer "Add it to my Google Calendar". If they accept, hand it to **journey-concierge** with the full flight details. If the concierge reports the calendar is not connected, give them the /integrations link to connect it and offer to try again once they say it's done — never make them hunt for the page themselves.
 
 # Offers, and bags bought late
 
