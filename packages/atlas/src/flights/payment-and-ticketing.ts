@@ -2,6 +2,8 @@ import type { AtlasClient } from "../client";
 
 export interface PaymentAndTicketingRequest {
   orderNo: string;
+  /** 1 = deposit balance, 3 = VCC passthrough, 4 = BYOA, 5 = MoR. Required by /pay.do. */
+  paymentMethod: number;
   [key: string]: unknown;
 }
 

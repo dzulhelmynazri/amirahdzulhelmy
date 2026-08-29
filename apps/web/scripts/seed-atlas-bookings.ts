@@ -225,6 +225,7 @@ export const bookRoute = async (
     if (pay) {
       const payResult = await atlas.flights.paymentAndTicketing.pay({
         orderNo,
+        paymentMethod: 1,
       });
       const { status: payStatus } = payResult as { status?: number };
       console.log(

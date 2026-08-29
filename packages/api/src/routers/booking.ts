@@ -35,7 +35,10 @@ const lifecycleSpecs: Record<LifecycleAction, LifecycleSpec> = {
   pay: {
     allowedStatuses: ["created"],
     nextStatus: "issued",
-    run: (atlas, orderNo) => atlas.flights.paymentAndTicketing.pay({ orderNo }),
+    // paymentMethod 1 = Atlas deposit balance; the field is required by
+    // /pay.do — omitting it fails before the order is even looked at.
+    run: (atlas, orderNo) =>
+      atlas.flights.paymentAndTicketing.pay({ orderNo, paymentMethod: 1 }),
     verb: "pay and issue",
   },
   refund: {

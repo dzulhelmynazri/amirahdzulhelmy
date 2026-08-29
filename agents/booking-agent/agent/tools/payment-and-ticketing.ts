@@ -11,7 +11,11 @@ export default defineTool({
     "Pay for a flight order and issue tickets on the Atlas booking API. Only call after the user explicitly confirms the current payment total; pay at most once per order, never reuse a confirmation ID, and never retry after an unclear result. If the result is unclear, use query-order instead of paying again.",
   async execute(input, context) {
     const client = await getAtlasClient();
-    const result = await client.flights.paymentAndTicketing.pay(input);
+    // paymentMethod 1 = Atlas deposit balance; /pay.do rejects requests without it.
+    const result = await client.flights.paymentAndTicketing.pay({
+      paymentMethod: 1,
+      ...input,
+    });
     await persistBooking(context, "issued", result, input.orderNo);
     return result;
   },
