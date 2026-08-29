@@ -7,6 +7,7 @@ import { trpc } from "@/utils/trpc";
 import { CategoryChart } from "./category-chart";
 import { toActivityAlerts } from "./data";
 import { ActivityTable } from "./data-table";
+import { DisruptionsCard } from "./disruptions-card";
 import { ActivityMap } from "./map";
 import { SentinelMonitorCard } from "./sentinel-monitor-card";
 import { TrendingNews } from "./trending-news";
@@ -47,6 +48,11 @@ export const ActivityDashboard = () => {
         column beside it. At full width both have room, and they collapse to
         one column before either gets narrow enough to cramp.
       */}
+      {/*
+        Above the destination board on purpose: a change to a flight you have
+        already paid for outranks news about a place you are going to.
+      */}
+      <DisruptionsCard />
       <div className="grid gap-4 lg:grid-cols-2">
         <SentinelMonitorCard />
         <CategoryChart alerts={alerts} />

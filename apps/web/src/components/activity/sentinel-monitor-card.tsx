@@ -17,8 +17,8 @@ export const SentinelMonitorCard = () => (
     <CardHeader>
       <CardTitle>Travel Sentinel</CardTitle>
       <CardDescription>
-        The Travel Sentinel agent scans destinations every 6 hours and posts new
-        alerts here.
+        The Travel Sentinel agent sweeps your upcoming destinations daily and
+        posts new alerts here.
       </CardDescription>
       <CardAction>
         <AvatarGroup>

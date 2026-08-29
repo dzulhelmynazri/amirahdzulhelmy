@@ -3,11 +3,12 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --port 3001",
     "build": "next build",
     "check-types": "tsc --noEmit",
     "db:seed-atlas": "bun scripts/seed-atlas-bookings.ts",
     "db:seed-bookings": "bun scripts/seed-bookings.ts",
+    "dev": "next dev --port 3001",
+    "disruption:simulate": "bun scripts/simulate-disruption.ts",
     "start": "next start"
   },
   "dependencies": {

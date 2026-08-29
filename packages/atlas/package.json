@@ -14,7 +14,8 @@
   "scripts": {
     "check-types": "tsc --noEmit",
     "fare-compare": "bun run scripts/fare-compare.ts",
-    "test": "bun test"
+    "test": "bun test",
+    "webhook:register": "bun run scripts/register-webhook.ts"
   },
   "dependencies": {
     "@atlas/env": "workspace:*",

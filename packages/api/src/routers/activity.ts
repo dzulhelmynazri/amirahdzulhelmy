@@ -1,6 +1,7 @@
 import { db } from "@atlas/db";
 import { activityAlert } from "@atlas/db/schema/activity";
-import { desc } from "drizzle-orm";
+import { disruptionEvent } from "@atlas/db/schema/disruptions";
+import { desc, eq } from "drizzle-orm";
 
 import { protectedProcedure, router } from "../index";
 import {
@@ -8,7 +9,39 @@ import {
   WATCH_HORIZON_DAYS,
 } from "../lib/destinations";
 
+/** Enough to fill the card; a board is not an archive. */
+const DISRUPTIONS_SHOWN = 20;
+
 export const activityRouter = router({
+  /**
+   * Disruptions Atlas pushed about this traveller's own orders.
+   *
+   * Scoped by `userId` rather than by destination: a schedule change belongs
+   * to one booking and showing it to anyone else would be a privacy leak, not
+   * a courtesy. Rows whose order we do not own carry a null userId and are
+   * therefore invisible here by construction.
+   */
+  disruptions: protectedProcedure.query(async ({ ctx }) => {
+    const rows = await db
+      .select()
+      .from(disruptionEvent)
+      .where(eq(disruptionEvent.userId, ctx.session.user.id))
+      .orderBy(desc(disruptionEvent.detectedAt))
+      .limit(DISRUPTIONS_SHOWN);
+
+    return rows.map((row) => ({
+      airline: row.airline,
+      detectedAt: row.detectedAt.toISOString(),
+      eventType: row.eventType,
+      handledNote: row.handledNote,
+      id: row.id,
+      orderNo: row.orderNo,
+      pnr: row.pnr,
+      status: row.status,
+      summary: row.summary,
+    }));
+  }),
+
   /**
    * Destination alerts, narrowed to places this traveller is actually flying.
    *
