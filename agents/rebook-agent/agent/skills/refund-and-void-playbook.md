@@ -7,7 +7,7 @@ description: Use when the user wants to cancel, refund, or void a flight order b
 ## Before any call
 
 1. Identify the exact order: `query-order` for its live status.
-2. Confirm with the user: the exact `orderNo`, and the scope — full order or partial via `subOrderNo`. Never guess.
+2. Establish the scope — full order, or partial via `subOrderNo`. **Ask only when you were not told.** A traveller who gave the order number and said "in full" has already answered; asking again ends the turn on a question they answered, and the call never happens. The approval prompt under "During" is where confirmation actually happens — it is a gate you cannot bypass, not a step you replace with a question. Never guess a scope you were not given.
 3. Know the differences:
    - `void-order` — irreversible and only valid **before ticketing**. Use for never-flown, un-ticketed orders.
    - `refunds` — for ticketed orders; subject to fare rules and may take time to process.
