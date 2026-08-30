@@ -1,73 +1,64 @@
 # Atlas — voice-over script
 
-Paste each block into a text-to-speech tool, download the mp3, drop it on the Recordly timeline under the matching footage. One file per scene is easier to re-cut than one long track.
+Matched to `amirahdzulhelmy-demo.mp4` (2:15). One block per scene; timestamps are where each block starts in the footage. Generate one mp3 per block, drop it on the timeline at its timestamp, and trim the tail if a take runs long.
 
-Total ≈ 480 words ≈ 3 minutes at a natural pace. Read order matches `docs/DEMO.md`.
+Total ≈ 330 words ≈ 2 minutes 10 at a natural pace.
 
 ---
 
-## 1 — Opening (~20s)
+## 1 — 0:00 · The ask (~10s)
 
-> Atlas is an agentic travel companion built on the AtripTech Atlas flight API. You don't fill forms and compare tabs. You tell a team of AI agents what you need, and they search, compare, warn you about trouble at your destination, book, pay, and put the trip on your calendar. Every dollar that moves still passes through a human tap.
+> This is Atlas. One sentence — Kuala Lumpur to Tokyo, cheapest flight, for a saved traveller — and a team of AI agents takes it from here.
 
-## 2 — Profile (~15s)
+## 2 — 0:08 · Saved travellers (~14s)
 
-> Passport details live in a proper form, not in a chat box. The agents read them when booking, so nobody is ever asked twice for a document number they already gave.
+> While the agents work, look at where the passenger data lives. Nora's passport, date of birth, and phone sit in a proper profile — the booking agent reads them itself. Nobody is asked to retype a document number into a chat box.
 
-## 3 — The booking (~55s) ⭐ core scene
+## 3 — 0:26 · Working in the background (~14s)
 
-> One sentence in. The conductor works out what was asked, then hands off to a booking specialist and a safety specialist at the same time. Fares are still loading while destination alerts arrive.
->
-> This is the part worth watching. Creating the order stops. Paying stops. The model cannot spend money on its own — it can only ask, and wait for a tap.
->
-> Approved. The order is created, the ticket is issued, and the booking reference is real: this ran against AtripTech's sandbox, not a mock. Then the follow-through nobody asked for twice — the itinerary writes itself to the Trips page, and a confirmation email with every flight and time lands in the traveller's inbox before the chat is done.
+> The conversation doesn't hold the app hostage. You can browse past bookings and trips while the specialists search live fares — and the first gate has already appeared: creating the order needed a human tap, and got one.
 
-## 4 — Bookings (~15s)
+## 4 — 0:40 · Gates and guardians (~18s)
 
-> The agent's booking is your booking. It lands on the same page you would have used yourself, with the ticket status, the passengers, and the baggage the fare included.
+> Every step that commits money stops and asks — approve once, always allow, or deny. And this feed is Travel Sentinel: destination alerts and a real schedule change Atlas pushed for an earlier booking. Booking and watching happen at the same time, by different agents.
 
-## 5 — Fares (~15s)
+## 5 — 0:56 · Integrations (~8s)
 
-> Search yourself with the form, or write one sentence and let a small model fill it in. Either way the search lands in the same history — the ones the agent ran are marked, and any of them replays with a tap.
+> Google Calendar, Maps, and Gmail are connected — the concierge uses them once a trip exists.
 
-## 6 — Disruption (~30s)
+## 6 — 1:04 · The booking lands (~16s)
 
-> Now the part that matters when a trip goes wrong. Atlas pushes schedule changes and cancellations straight to us. The event is recorded before any model runs, so what the airline said survives even if the agent fails.
->
-> Then Disruption Guard wakes up, works out what actually changed, and writes it in plain language on the traveller's own board — next to the flights they already paid for.
+> And there it is, on the same page you'd book from yourself. VietJet through Ho Chi Minh City, checked bags included in the fare, passenger read straight from the profile. Payment was the final gate — approved.
 
-## 7 — Concierge (~15s)
+## 7 — 1:24 · The receipt (~20s)
 
-> A flight is not a journey. The concierge reads the confirmation emails, measures the ground legs on Maps, and writes the whole thing to the calendar.
+> This is the part most chat demos skip: follow-through. The itinerary wrote itself to the Trips page — day by day, with the layover. And the panel states exactly what happened: booked, tickets issued, itinerary saved, confirmation email sent. Every line backed by a real record, not the model's word.
 
-## 8 — Proof (~25s)
+## 8 — 1:56 · The email (~12s)
 
-> Two claims, both checkable. The integration passed AtripTech's official user acceptance testing: search, order, payment, ticket issuance, all through the live sandbox.
->
-> And the safety rules are tests, not slides. One of them proves the agent parks instead of paying. Another feeds it a poisoned email telling it to book and approve on its own, and proves it refuses.
+> The confirmation is a real delivered email — reference, order number, and the full flight table with times. Sent automatically at payment, to the address on the booking.
 
-## 9 — Close (~15s)
+## 9 — 2:08 · Close (~8s)
 
-> An orchestrator that owns the conversation, specialists that run in their own context, and a human on every gate that spends money. Atlas — agentic, but never on its own with your card.
+> Tickets issued, against AtripTech's live sandbox. Atlas — agentic, but never alone with your card.
 
 ---
 
 ## How to turn this into audio
 
-**Fastest, no install — ElevenLabs.** Go to elevenlabs.io, sign in, paste a block, pick a voice, generate, download the mp3. Free tier is about ten minutes a month, which covers this whole video several times over. Best quality of the options here, and nothing to install the night before a deadline.
+**Fastest, no install — ElevenLabs.** Go to elevenlabs.io, sign in, paste a block, pick a voice, generate, download the mp3. Free tier is about ten minutes a month, which covers this whole video several times over.
 
 **Free and unlimited — Edge TTS.** Microsoft's neural voices from the command line:
 
 ```sh
 python3 -m pip install edge-tts     # or: brew install pipx && pipx install edge-tts
-edge-tts --voice en-US-AriaNeural --file scene3.txt --write-media scene3.mp3
-edge-tts --list-voices | grep ms-MY  # Malay voices, if you narrate in Malay
+edge-tts --voice en-US-AriaNeural --file scene7.txt --write-media scene7.mp3
 ```
 
-**Already on your Mac — `say`.** Zero install, but the built-in voices sound dated. Download an enhanced voice first in System Settings → Accessibility → Spoken Content → System Voice → Manage Voices, then:
+**Already on your Mac — `say`.** Download an enhanced voice first in System Settings → Accessibility → Spoken Content → System Voice → Manage Voices, then:
 
 ```sh
-say -v Samantha -o scene3.aiff -f scene3.txt
+say -v Samantha -o scene7.aiff -f scene7.txt
 ```
 
 Whichever you use: generate per scene, not one long file. When a take runs short you re-cut one clip instead of re-timing the whole video.
