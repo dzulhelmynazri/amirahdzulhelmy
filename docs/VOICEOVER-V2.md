@@ -36,7 +36,7 @@ Total ≈ 470 words ≈ 3 minutes 10 at a natural pace.
 
 ## 8 — 2:35 · The receipt (~22s)
 
-> Then the follow-through. The itinerary wrote itself to the Trips page — day by day, layover and all. And the panel reports exactly what happened: booked, tickets issued, itinerary saved, confirmation email sent to the traveller's inbox. Each line is backed by a database record, not the model's word for it.
+> Then the follow-through. The itinerary wrote itself to the Trips page, and the panel reports the truth: booked, tickets issued, itinerary saved, confirmation email sent — every line backed by a real record.
 
 ## 9 — 2:50 · Beyond the flight (~12s)
 
