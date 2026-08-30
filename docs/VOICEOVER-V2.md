@@ -36,7 +36,7 @@ Total ≈ 470 words ≈ 3 minutes 10 at a natural pace.
 
 ## 8 — 2:35 · The receipt (~22s)
 
-> Then the follow-through. The itinerary wrote itself to the Trips page, and the panel reports the truth: booked, tickets issued, itinerary saved, confirmation email sent — every line backed by a real record.
+> And the follow-through happens on its own: itinerary saved to Trips, tickets issued, confirmation email delivered — all of it real, all of it on record.
 
 ## 9 — 2:50 · Beyond the flight (~12s)
 
