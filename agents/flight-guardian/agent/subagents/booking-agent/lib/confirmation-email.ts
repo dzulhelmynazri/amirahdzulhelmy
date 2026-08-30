@@ -88,14 +88,17 @@ export const sendBookingConfirmation = async (
     recipients: readonly string[];
     summary?: string;
   }
-): Promise<void> => {
+): Promise<{ reason?: string; sent: boolean; to: string[] }> => {
+  const to = uniqueEmails(input.recipients);
   try {
-    const to = uniqueEmails(input.recipients);
     const fromAddress = process.env.RESEND_FROM_ADDRESS;
     const mailer = resend();
 
-    if (to.length === 0 || !fromAddress || !mailer) {
-      return;
+    if (to.length === 0) {
+      return { reason: "no contact email on the order", sent: false, to: [] };
+    }
+    if (!fromAddress || !mailer) {
+      return { reason: "email sending is not configured", sent: false, to };
     }
 
     await mailer.emails.send(
@@ -109,9 +112,11 @@ export const sendBookingConfirmation = async (
       // natural key for exactly one email.
       { idempotencyKey: `booking-confirmation/${input.orderNo}` }
     );
-  } catch {
+    return { sent: true, to };
+  } catch (error) {
     // A booking that is paid and ticketed must never fail because an email
     // did not go out. The order number is already on screen and in the panel.
+    return { reason: String(error).slice(0, 200), sent: false, to };
   }
 };
 

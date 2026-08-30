@@ -33,12 +33,14 @@ export default defineTool({
     // to nobody.
     const recipients = await recallConfirmationContacts(input.orderNo);
     await persistBooking(context, "issued", result, input.orderNo);
-    await sendBookingConfirmation(context, {
+    const confirmationEmail = await sendBookingConfirmation(context, {
       orderNo: input.orderNo,
       pnr: pnrOf(result),
       recipients,
     });
-    return result;
+    // Surfaced so the recap can say what actually happened to the email —
+    // "sent to x@y" or the reason it was not — instead of guessing.
+    return { ...(result as object), confirmationEmail };
   },
   inputSchema: z.object({
     orderNo: z
