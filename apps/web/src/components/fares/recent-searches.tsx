@@ -48,31 +48,34 @@ export const RecentSearches = () => {
         Pick up where you left off
       </h3>
 
-      <div className="flex flex-col gap-2">
+      {/*
+        A row, not a stack. Four full-width bars under the form read as a
+        second list competing with the search card; as cards side by side they
+        read as what they are — somewhere to resume from. The row scrolls
+        rather than wrapping, so a fifth trip lengthens nothing.
+      */}
+      <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
         {rows.map((search) => (
           <Button
-            className="h-auto justify-start gap-3 rounded-2xl border px-4 py-3 font-normal"
+            className="h-auto min-w-56 shrink-0 flex-col items-start gap-1.5 rounded-2xl border px-4 py-3 font-normal"
             key={search.id}
             onClick={() => applyRecentSearch(search)}
             type="button"
             variant="outline"
           >
-            <span className="flex flex-1 flex-wrap items-center gap-2 text-left">
+            <span className="flex w-full items-center gap-2 text-left">
               <span className="font-medium">{cityName(search.origin)}</span>
               <ArrowRight className="size-4 shrink-0 text-muted-foreground" />
               <span className="font-medium">
                 {cityName(search.destination)}
               </span>
-              <span aria-hidden="true" className="text-muted-foreground">
-                ·
-              </span>
-              <span className="text-muted-foreground text-sm">
-                {formatDates(search)}
-              </span>
             </span>
-            <span className="flex shrink-0 items-center gap-2 text-muted-foreground text-sm">
+            <span className="flex w-full items-center gap-2 text-muted-foreground text-sm">
+              <span>{formatDates(search)}</span>
+            </span>
+            <span className="flex w-full items-center gap-2 text-muted-foreground text-xs">
               {search.source === "agent" && (
-                <span className="flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-primary text-xs">
+                <span className="flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-primary">
                   <Sparkles className="size-3" />
                   AI
                 </span>

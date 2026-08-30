@@ -29,7 +29,9 @@ export const FaresCompose = () => (
         <div className="w-full max-w-lg">
           <FareSearchForm />
         </div>
-        <div className="w-full max-w-lg">
+        {/* Wider than the form: the row of past trips scrolls sideways, and
+            capping it at the form's width would hide the third card. */}
+        <div className="w-full">
           <RecentSearches />
         </div>
       </div>
