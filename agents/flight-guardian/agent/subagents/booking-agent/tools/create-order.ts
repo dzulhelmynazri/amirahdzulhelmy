@@ -5,6 +5,10 @@ import { z } from "zod";
 import { getAtlasClient } from "../lib/atlas";
 import { persistBooking } from "../lib/bookings";
 import {
+  contactsFromOrderInput,
+  rememberConfirmationContacts,
+} from "../lib/confirmation-email";
+import {
   assertOrderCreated,
   toAtlasContact,
   toAtlasPassengers,
@@ -23,6 +27,14 @@ export default defineTool({
     });
     assertOrderCreated(result);
     await persistBooking(context, "created", result);
+    // Atlas returns contactEmail blank, so the addresses the traveller gave us
+    // are only available here. Parked on the booking for the payment step,
+    // which is where the confirmation is worth sending.
+    await rememberConfirmationContacts(
+      context,
+      result,
+      contactsFromOrderInput(input)
+    );
     return result;
   },
   inputSchema: z.object({

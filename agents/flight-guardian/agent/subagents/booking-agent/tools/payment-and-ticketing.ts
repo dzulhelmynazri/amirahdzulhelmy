@@ -4,6 +4,18 @@ import { z } from "zod";
 
 import { getAtlasClient } from "../lib/atlas";
 import { persistBooking } from "../lib/bookings";
+import {
+  recallConfirmationContacts,
+  sendBookingConfirmation,
+} from "../lib/confirmation-email";
+
+const pnrOf = (result: unknown): string | undefined => {
+  if (typeof result !== "object" || result === null) {
+    return;
+  }
+  const { pnrCode } = result as { pnrCode?: unknown };
+  return typeof pnrCode === "string" && pnrCode !== "" ? pnrCode : undefined;
+};
 
 export default defineTool({
   approval: always(),
@@ -17,6 +29,13 @@ export default defineTool({
       ...input,
     });
     await persistBooking(context, "issued", result, input.orderNo);
+    // The confirmation the traveller was always promised and never got.
+    // Addresses were stored by create-order; Atlas returns them blank.
+    await sendBookingConfirmation(context, {
+      orderNo: input.orderNo,
+      pnr: pnrOf(result),
+      recipients: await recallConfirmationContacts(input.orderNo),
+    });
     return result;
   },
   inputSchema: z.object({

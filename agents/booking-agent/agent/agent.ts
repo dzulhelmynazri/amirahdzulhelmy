@@ -2,7 +2,7 @@ import { defineAgent, defineDynamic } from "eve";
 
 export default defineAgent({
   build: {
-    externalDependencies: ["@upstash/redis"],
+    externalDependencies: ["@upstash/redis", "resend"],
   },
   compaction: {
     thresholdPercent: 0.75,
