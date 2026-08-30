@@ -100,7 +100,16 @@ const toolApprovalStatus = (part: EveDynamicToolPart): ToolApprovalStatus => {
     return "complete";
   }
   if (part.state === "approval-responded") {
-    return part.approval.approved === false ? "denied" : "approving";
+    /**
+     * Answered means answered — not an eternal spinner.
+     *
+     * A gated tool inside a subagent runs in the subagent's session, so this
+     * transcript never receives the completion event; mapping an approved
+     * response to "approving" left every booking's cards spinning forever,
+     * long after the PNR was on screen. The approval is the thing this card
+     * records, and it has happened.
+     */
+    return part.approval.approved === false ? "denied" : "approved";
   }
   return "running";
 };
@@ -252,6 +261,17 @@ const alwaysAllowed = new Set<string>();
 /** Approval requests already answered, so an auto-approve fires once. */
 const autoAnswered = new Set<string>();
 
+/**
+ * Failed auto-approve attempts per request. Retrying on the next render is
+ * right when the session is merely mid-turn, and an infinite loop when the
+ * session is dead — every render retried, every retry failed with a state
+ * update, and React raised "Maximum update depth exceeded" from the chat
+ * hook. Three failures means this session is not going to take the answer;
+ * the card stays pending for a manual tap.
+ */
+const autoAttempts = new Map<string, number>();
+const MAX_AUTO_ATTEMPTS = 3;
+
 const ApprovalHitl = ({
   part,
   request,
@@ -302,12 +322,18 @@ const ApprovalHitl = ({
       return;
     }
 
+    const attempts = autoAttempts.get(request.requestId) ?? 0;
+    if (attempts >= MAX_AUTO_ATTEMPTS) {
+      return;
+    }
+
     autoAnswered.add(request.requestId);
+    autoAttempts.set(request.requestId, attempts + 1);
     const run = async () => {
       const ok = await approve();
       if (!ok) {
         // The session was mid-turn. A later render — and streaming produces
-        // plenty — retries once the turn settles.
+        // plenty — retries once the turn settles, up to the attempt cap.
         autoAnswered.delete(request.requestId);
       }
     };
