@@ -17,6 +17,17 @@ import { trpc } from "@/utils/trpc";
  * call — reopening a conversation reads the cache rather than regenerating.
  */
 
+/**
+ * One shared empty array, not a fresh one per render.
+ *
+ * The query is disabled for most of a conversation — while the agent is busy,
+ * or whenever it asked its own question — so `data` is usually undefined, and
+ * `data ?? []` handed back a new array identity every render. That travels
+ * into the composer as a prop and denies React every bail-out it would
+ * otherwise get from an unchanged subtree.
+ */
+const NONE: string[] = [];
+
 const textOf = (message: EveMessage | undefined): string => {
   if (!message) {
     return "";
@@ -66,5 +77,5 @@ export const useFollowUps = (
     staleTime: Number.POSITIVE_INFINITY,
   });
 
-  return data ?? [];
+  return data ?? NONE;
 };
