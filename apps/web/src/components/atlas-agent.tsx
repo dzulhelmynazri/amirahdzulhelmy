@@ -17,7 +17,7 @@ import { BorderBeam } from "border-beam";
 import type { EveMessage } from "eve/react";
 import { SquarePen, User, XIcon } from "lucide-react";
 import Image from "next/image";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import type { PendingSuggestions } from "@/components/atlas-agent-message";
 import {
@@ -224,16 +224,32 @@ const AgentComposer = ({
     }
   }
 
+  /**
+   * Read at submit time, not closed over.
+   *
+   * Depending on `draft` and `draftContext` directly gave handleSubmit a new
+   * identity on every staged handoff, and PromptInput keys a layout effect and
+   * a ResizeObserver off its callbacks — enough to spin the composer into
+   * "Maximum update depth exceeded". Nothing here needs to be reactive: the
+   * values are only wanted at the moment someone presses send.
+   */
+  const stagedRef = useRef({ draft, draftContext });
+
+  useEffect(() => {
+    stagedRef.current = { draft, draftContext };
+  }, [draft, draftContext]);
+
   const handleSubmit = useCallback(
     (text: string) => {
       // The staged machine detail rides along with the message the traveller
       // actually sees. It is only theirs to send if they are still sending the
       // thing it was staged for — a retyped message is a different question.
-      const staged = draftContext !== "" && text.trim() === draft.trim();
-      onSubmit(staged ? `${text}\n${draftContext}` : text);
+      const { draft: staged, draftContext: context } = stagedRef.current;
+      const unchanged = context !== "" && text.trim() === staged.trim();
+      onSubmit(unchanged ? `${text}\n${context}` : text);
       setValue("");
     },
-    [draft, draftContext, onSubmit]
+    [onSubmit]
   );
 
   return (
