@@ -16,13 +16,13 @@ export default defineEval({
   tags: ["live"],
   async test(t) {
     const ranked = await t.send(
-      "Search one-way fares from SIN to LHR on 2026-12-15 for 1 adult. I confirm those details. Use flight-search, not route-export. Rank a short cheap list. Do not book yet."
+      "Search one-way fares from SIN to LHR on 2026-09-13 for 1 adult. I confirm those details. Use flight-search, not route-export. Rank a short cheap list. Do not book yet."
     );
     ranked.calledTool("flight-search");
     ranked.notCalledTool("booking-agent");
 
     await t.send(
-      "I pick the cheapest option. This is a new booking, not a rebooking. Give me the exact routingIdentifier from that option for SIN to LHR on 2026-12-15, 1 adult passenger DOE/JOHN, and say who takes it from here. Do not create an order or take payment."
+      "I pick the cheapest option. This is a new booking, not a rebooking. Give me the exact routingIdentifier from that option for SIN to LHR on 2026-09-13, 1 adult passenger DOE/JOHN, and say who takes it from here. Do not create an order or take payment."
     );
     t.succeeded();
     t.messageIncludes("booking-agent");

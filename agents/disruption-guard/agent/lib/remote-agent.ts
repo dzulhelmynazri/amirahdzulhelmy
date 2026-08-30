@@ -8,7 +8,7 @@ const SPECIALISTS = {
   "disruption-guard":
     "Monitors booked trips for delays, cancellations, and schedule changes, then explains what changed. Does not rebook or refund.",
   "flight-guardian":
-    "Atlas front door. Routes booking, rebooking, routing and concierge work to its internal specialists. Send it a complete task message.",
+    "Atlas front door. Routes work to its internal specialists — concierge, routing, booking, rebooking — and honours limits set in the message. Handing it work books nothing by itself: say in `message` what must not happen, and it holds the specialist to that.",
   "journey-concierge":
     "Connects flights to ground transport, hotel timing, Gmail, Calendar, and Maps. Does not book or rebook flights.",
   "rebook-agent":
