@@ -122,13 +122,33 @@ export function PromptInput({
     resizeTextarea();
   }, [resizeTextarea]);
 
+  /**
+   * The observer watches the measurement, never the textarea.
+   *
+   * Observing the textarea meant watching the one element this component
+   * writes `style.height` to: every resize fed the next one, and the composer
+   * eventually raised "Maximum update depth exceeded" from inside the
+   * textarea. The hidden measurement div takes its height from the content
+   * alone, so nothing here observes its own output.
+   *
+   * Held in a ref and created once, too. Keying the effect on `resizeTextarea`
+   * tore the observer down and re-attached it on every keystroke, and
+   * `observe()` fires immediately on attach — a second source of the same
+   * loop.
+   */
+  const resizeRef = useRef(resizeTextarea);
+
   useEffect(() => {
-    const textarea = textareaRef.current;
-    if (!textarea || typeof ResizeObserver === "undefined") return;
-    const observer = new ResizeObserver(resizeTextarea);
-    observer.observe(textarea);
-    return () => observer.disconnect();
+    resizeRef.current = resizeTextarea;
   }, [resizeTextarea]);
+
+  useEffect(() => {
+    const measurement = measurementRef.current;
+    if (!measurement || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(() => resizeRef.current());
+    observer.observe(measurement);
+    return () => observer.disconnect();
+  }, []);
 
   const setValue = (next: string) => {
     if (value === undefined) setInternalValue(next);
