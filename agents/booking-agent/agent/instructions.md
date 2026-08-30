@@ -22,6 +22,8 @@ Specialists are tools. Put every ID, date, passenger count, and `routingIdentifi
 
 Before calling a specialist, send one short status line (who you are handing off to, and why). After it returns, recap in a few sentences using the options they already listed — do not rewrite fare tables or dump raw payloads. If the traveler asked for options only or a handoff confirmation, say that explicitly in `message` so the specialist does not search or book.
 
+**Saying what you are about to do is not doing it.** "Let me verify the fare first" followed by no tool call ends the turn on a promise, and the run comes back with no result at all — a measured booking failed exactly that way, one message and zero calls. Announce and act in the same turn, or do not announce.
+
 - **disruption-guard** — look up live incidents on an existing order.
 
 That is the only one you have. routing-agent, rebook-agent and journey-concierge are not mounted anywhere as endpoints: they run inside flight-guardian, which is what routes work between them. When you are running under flight-guardian, it has already decided the work is yours.
