@@ -187,6 +187,7 @@ const AgentMessages = ({
 const AgentComposer = ({
   awaitingAnswer,
   draft,
+  draftContext,
   errorMessage,
   generated,
   isBusy,
@@ -199,6 +200,7 @@ const AgentComposer = ({
 }: {
   awaitingAnswer: boolean;
   draft: string;
+  draftContext: string;
   errorMessage?: string;
   generated: readonly string[];
   isBusy: boolean;
@@ -224,10 +226,14 @@ const AgentComposer = ({
 
   const handleSubmit = useCallback(
     (text: string) => {
-      onSubmit(text);
+      // The staged machine detail rides along with the message the traveller
+      // actually sees. It is only theirs to send if they are still sending the
+      // thing it was staged for — a retyped message is a different question.
+      const staged = draftContext !== "" && text.trim() === draft.trim();
+      onSubmit(staged ? `${text}\n${draftContext}` : text);
       setValue("");
     },
-    [onSubmit]
+    [draft, draftContext, onSubmit]
   );
 
   return (
@@ -296,8 +302,15 @@ const AgentComposer = ({
 };
 
 export const AtlasAgent = () => {
-  const { isOpen, isFullWidth, closeAgent, draft, mounted, setDraft } =
-    useAgentSidebarSync();
+  const {
+    isOpen,
+    isFullWidth,
+    closeAgent,
+    draft,
+    draftContext,
+    mounted,
+    setDraft,
+  } = useAgentSidebarSync();
   const {
     actions: {
       cancel,
@@ -385,6 +398,7 @@ export const AtlasAgent = () => {
             />
             <AgentComposer
               draft={draft}
+              draftContext={draftContext}
               errorMessage={status === "error" ? error?.message : undefined}
               isBusy={isBusy}
               isEmpty={messages.length === 0}

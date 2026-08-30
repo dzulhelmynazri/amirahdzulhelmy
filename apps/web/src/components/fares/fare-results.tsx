@@ -126,10 +126,15 @@ const LegTimes = ({ leg }: { leg: FareLeg }) => (
 );
 
 /**
- * Hands a chosen flight to the agent with every detail it needs already in the
- * message — route, dates, passengers, price and the opaque `routingIdentifier`
- * that downstream Atlas calls require. Flight Guardian's own instructions say
- * specialists cannot see this conversation, so the message has to carry it all.
+ * Hands a chosen flight to the agent, split into what the traveller reads and
+ * what only the agent needs.
+ *
+ * Flight Guardian's specialists cannot see this conversation, so the message
+ * has to carry the whole booking — including the opaque `routingIdentifier`
+ * every downstream Atlas call requires. That token used to sit in the composer
+ * as an unbroken 80-character run, which is not a message anyone recognises as
+ * theirs to send: it turned one tap into a puzzle. It travels as `context` now
+ * and is appended on submit.
  */
 const buildHandoff = (fare: NormalizedFare, passengers: number) => {
   const outbound = `${fare.outbound.flightNumbers.join("/")} ${fare.outbound.departureAirport} ${fare.outbound.departureTime} to ${fare.outbound.arrivalAirport} ${fare.outbound.arrivalTime} on ${fare.outbound.date}`;
@@ -138,16 +143,18 @@ const buildHandoff = (fare: NormalizedFare, passengers: number) => {
     : "";
   const cabin = fare.cabin ? `\nFare family: ${fare.cabin}` : "";
 
-  return dedent`
-    I want to book this flight — please verify it is still available and walk me through booking.
+  return {
+    context: `routingIdentifier: ${fare.routingIdentifier ?? "unavailable"}`,
+    text: dedent`
+      I want to book this flight — please verify it is still available and walk me through booking.
 
-    Route: ${fare.origin} to ${fare.destination}
-    Outbound: ${outbound}${inbound}
-    Airline: ${airlineName(fare.airline)} (${fare.airline})
-    Price quoted: ${money(fare.adultTotal, fare.currency)} per adult, ${passengers} traveller${passengers === 1 ? "" : "s"}${cabin}
-    Baggage: ${fare.baggage.description}
-    routingIdentifier: ${fare.routingIdentifier ?? "unavailable"}
-  `;
+      Route: ${fare.origin} to ${fare.destination}
+      Outbound: ${outbound}${inbound}
+      Airline: ${airlineName(fare.airline)} (${fare.airline})
+      Price quoted: ${money(fare.adultTotal, fare.currency)} per adult, ${passengers} traveller${passengers === 1 ? "" : "s"}${cabin}
+      Baggage: ${fare.baggage.description}
+    `,
+  };
 };
 
 const BookWithAgentButton = ({ fare }: { fare: NormalizedFare }) => {
@@ -157,7 +164,10 @@ const BookWithAgentButton = ({ fare }: { fare: NormalizedFare }) => {
   return (
     <Button
       disabled={!fare.sellable}
-      onClick={() => handOffToAgent(buildHandoff(fare, search.passengers))}
+      onClick={() => {
+        const { context, text } = buildHandoff(fare, search.passengers);
+        handOffToAgent(text, context);
+      }}
       size="sm"
       title={fare.sellable ? undefined : fare.sellableReason}
       type="button"

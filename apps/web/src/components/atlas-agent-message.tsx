@@ -573,10 +573,22 @@ const renderAssistantParts = (
   return nodes;
 };
 
+/**
+ * What the traveller sees of their own message.
+ *
+ * The machine detail a fare handoff carries — `routingIdentifier`, an opaque
+ * 80-character token — is stripped here as well as kept out of the composer.
+ * The agent still receives it; showing it back reads as the app leaking its
+ * own plumbing into a sentence someone supposedly wrote.
+ */
 const userText = (message: EveMessage): string =>
   message.parts
     .flatMap((part) => (part.type === "text" ? [part.text] : []))
-    .join("\n");
+    .join("\n")
+    .split("\n")
+    .filter((line) => !line.trimStart().startsWith("routingIdentifier:"))
+    .join("\n")
+    .trimEnd();
 
 export const AtlasAgentMessageBody = ({
   isLast,

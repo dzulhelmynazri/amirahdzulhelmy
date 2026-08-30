@@ -25,6 +25,15 @@ interface AgentPanelContextValue {
    */
   draft: string;
   setDraft: (text: string) => void;
+  /**
+   * Machine detail the agent needs and the traveller should never read — the
+   * opaque `routingIdentifier` a chosen fare carries. It rode in the draft
+   * once, which put an 80-character base64 token in the composer and then in
+   * the message bubble, and turned "press send" into "decipher this first".
+   * Appended to the text on submit instead, so the agent still gets it.
+   */
+  draftContext: string;
+  setDraftContext: (text: string) => void;
   isOpen: boolean;
   isFullWidth: boolean;
   mounted: boolean;
@@ -73,6 +82,7 @@ const AgentPanelContext = createContext<AgentPanelContextValue | null>(null);
 export const AgentPanelProvider = ({ children }: { children: ReactNode }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [draft, setDraft] = useState("");
+  const [draftContext, setDraftContext] = useState("");
   const [isFullWidth, setIsFullWidth] = useState(false);
   const [mounted, setMounted] = useState(false);
 
@@ -133,18 +143,21 @@ export const AgentPanelProvider = ({ children }: { children: ReactNode }) => {
     () => ({
       close,
       draft,
+      draftContext,
       getSidebarStateBeforeOpen,
       isFullWidth,
       isOpen,
       mounted,
       open,
       setDraft,
+      setDraftContext,
       setSidebarStateBeforeOpen,
       toggle,
     }),
     [
       close,
       draft,
+      draftContext,
       getSidebarStateBeforeOpen,
       isFullWidth,
       isOpen,
@@ -181,6 +194,8 @@ export const useAgentSidebarSync = () => {
     close,
     draft,
     setDraft,
+    draftContext,
+    setDraftContext,
     getSidebarStateBeforeOpen,
     setSidebarStateBeforeOpen,
   } = useAgentPanel();
@@ -233,24 +248,31 @@ export const useAgentSidebarSync = () => {
     [isOpen, isFullWidth, closeAgent, openAgent]
   );
 
-  /** Opens the panel with the composer already filled in. */
+  /**
+   * Opens the panel with the composer already filled in. `context` is the
+   * machine detail the agent needs and the traveller should not have to read —
+   * it is appended to the message on submit rather than shown in the box.
+   */
   const handOffToAgent = useCallback(
-    (text: string) => {
+    (text: string, context = "") => {
       setDraft(text);
+      setDraftContext(context);
       openAgent(false);
     },
-    [openAgent, setDraft]
+    [openAgent, setDraft, setDraftContext]
   );
 
   return {
     closeAgent,
     draft,
+    draftContext,
     handOffToAgent,
     isFullWidth,
     isOpen,
     mounted,
     openAgent,
     setDraft,
+    setDraftContext,
     toggleAgent,
   };
 };
