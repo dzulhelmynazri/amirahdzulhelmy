@@ -2,6 +2,21 @@ import "dotenv/config";
 import { createEnv } from "@t3-oss/env-core";
 import { z } from "zod";
 
+/**
+ * One or more origins, comma-separated. Lets a single value cover both the
+ * local dev origin and the deployed one, so nothing has to be swapped by hand.
+ */
+const originList = z
+  .string()
+  .min(1)
+  .transform((value) =>
+    value
+      .split(",")
+      .map((origin) => origin.trim())
+      .filter(Boolean)
+  )
+  .pipe(z.array(z.url()).min(1));
+
 export const env = createEnv({
   emptyStringAsUndefined: true,
   runtimeEnv: process.env,
@@ -13,7 +28,7 @@ export const env = createEnv({
     BETTER_AUTH_SECRET: z.string().min(32),
     BETTER_AUTH_URL: z.url(),
     COMPOSIO_API_KEY: z.string().min(1),
-    CORS_ORIGIN: z.url(),
+    CORS_ORIGIN: originList,
     DATABASE_URL: z.string().min(1),
     GOOGLE_CLIENT_ID: z.string().min(1),
     GOOGLE_CLIENT_SECRET: z.string().min(1),
