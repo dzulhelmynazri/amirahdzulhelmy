@@ -17,7 +17,7 @@ import { BorderBeam } from "border-beam";
 import type { EveMessage } from "eve/react";
 import { SquarePen, User, XIcon } from "lucide-react";
 import Image from "next/image";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef } from "react";
 
 import type { PendingSuggestions } from "@/components/atlas-agent-message";
 import {
@@ -196,6 +196,7 @@ const AgentComposer = ({
   onStop,
   onSubmit,
   ready,
+  setDraft,
   suggestions,
 }: {
   awaitingAnswer: boolean;
@@ -209,29 +210,21 @@ const AgentComposer = ({
   onStop: () => void;
   onSubmit: (text: string) => void;
   ready: boolean;
+  setDraft: (text: string) => void;
   suggestions?: PendingSuggestions;
 }) => {
-  const [value, setValue] = useState("");
-  const [lastDraft, setLastDraft] = useState(draft);
-
-  // Adjusting state during render is React's own pattern for deriving from a
-  // changed prop — cheaper and less surprising than an effect that fires after
-  // the panel has already painted an empty box.
-  if (draft !== lastDraft) {
-    setLastDraft(draft);
-    if (draft !== "") {
-      setValue(draft);
-    }
-  }
-
   /**
-   * Read at submit time, not closed over.
+   * The draft is the value. There is no second copy.
    *
-   * Depending on `draft` and `draftContext` directly gave handleSubmit a new
-   * identity on every staged handoff, and PromptInput keys a layout effect and
-   * a ResizeObserver off its callbacks — enough to spin the composer into
-   * "Maximum update depth exceeded". Nothing here needs to be reactive: the
-   * values are only wanted at the moment someone presses send.
+   * This used to hold `value` in local state and copy `draft` into it during
+   * render whenever the prop changed — derived state, kept in step by a
+   * render-phase write. Two sources of truth for one string, and React counts
+   * render-phase updates toward the update-depth limit, so a controlled
+   * textarea in a panel that re-renders while the agent streams eventually
+   * raised "Maximum update depth exceeded" from inside the textarea.
+   *
+   * One state, owned by the panel: staging a handoff writes it, typing writes
+   * it, sending clears it. Nothing to synchronise, so nothing to loop.
    */
   const stagedRef = useRef({ draft, draftContext });
 
@@ -247,9 +240,9 @@ const AgentComposer = ({
       const { draft: staged, draftContext: context } = stagedRef.current;
       const unchanged = context !== "" && text.trim() === staged.trim();
       onSubmit(unchanged ? `${text}\n${context}` : text);
-      setValue("");
+      setDraft("");
     },
-    [onSubmit]
+    [onSubmit, setDraft]
   );
 
   return (
@@ -281,7 +274,7 @@ const AgentComposer = ({
               <button
                 className="text-left text-muted-foreground text-sm underline-offset-4 hover:text-foreground hover:underline"
                 key={suggestion}
-                onClick={() => setValue(suggestion)}
+                onClick={() => setDraft(suggestion)}
                 type="button"
               >
                 {suggestion}
@@ -308,9 +301,9 @@ const AgentComposer = ({
           loading={isBusy}
           onStop={onStop}
           onSubmit={handleSubmit}
-          onValueChange={setValue}
+          onValueChange={setDraft}
           placeholder="Ask me anything..."
-          value={value}
+          value={draft}
         />
       </BorderBeam>
     </div>
@@ -343,10 +336,9 @@ export const AtlasAgent = () => {
 
   const handleSubmit = useCallback(
     (text: string) => {
-      setDraft("");
       void send(text);
     },
-    [send, setDraft]
+    [send]
   );
 
   /**
@@ -421,6 +413,7 @@ export const AtlasAgent = () => {
               isFullWidth={isFullWidth}
               onStop={handleStop}
               onSubmit={handleSubmit}
+              setDraft={setDraft}
               awaitingAnswer={awaitingAnswer}
               generated={generated}
               ready={ready}
