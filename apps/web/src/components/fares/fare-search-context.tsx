@@ -13,6 +13,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import type { ReactNode } from "react";
@@ -178,6 +179,21 @@ export const FareSearchProvider = ({
   const committed = searchFromParams(urlParams);
   const urlKey = serializeFareSearch(urlParams);
 
+  /**
+   * The search effect reads the params but must not re-run on their identity.
+   * useQueryStates rebuilds that object every render, so depending on it made
+   * the effect retrigger on its own setResults — "Maximum update depth
+   * exceeded". `urlKey` is serialised from the same params, so a real change
+   * still re-runs it; this ref carries the values across without being
+   * reactive. Declared before the search effect so it is already current when
+   * that one runs in the same commit.
+   */
+  const paramsRef = useRef(urlParams);
+
+  useEffect(() => {
+    paramsRef.current = urlParams;
+  }, [urlParams]);
+
   const [formSearch, setFormSearch] = useState(defaultSearch);
   const [urlDraft, setUrlDraft] = useState<FareSearch | null>(null);
   const [seenUrlKey, setSeenUrlKey] = useState(urlKey);
@@ -337,7 +353,7 @@ export const FareSearchProvider = ({
       return;
     }
 
-    const criteria = searchFromParams(urlParams);
+    const criteria = searchFromParams(paramsRef.current);
     const { cabin, departure, destination, origin, passengers, returnDate } =
       criteria;
 
@@ -395,7 +411,7 @@ export const FareSearchProvider = ({
     return () => {
       cancelled = true;
     };
-  }, [mutateAsync, router, source, urlKey, urlParams]);
+  }, [mutateAsync, router, source, urlKey]);
 
   const value = useMemo<FareSearchContextValue>(
     () => ({
