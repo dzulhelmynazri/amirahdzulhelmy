@@ -702,6 +702,28 @@ const userText = (message: EveMessage): string =>
     .trimEnd();
 
 /**
+ * Whether this conversation approved a payment gate.
+ *
+ * The payment approval is the last thing the traveller does in a booking;
+ * everything after it happens in the subagent's session and may never reach
+ * this transcript. When a turn then ends with no reply, this is how the
+ * panel knows the silence is almost certainly a finished booking — and goes
+ * to the database for the receipt instead of shrugging.
+ */
+export const hasApprovedPayment = (messages: readonly EveMessage[]): boolean =>
+  messages.some((message) =>
+    message.parts.some(
+      (part) =>
+        part.type === "dynamic-tool" &&
+        part.state === "approval-responded" &&
+        part.approval.approved !== false &&
+        (part.toolMetadata?.eve?.name ?? part.toolName ?? "").includes(
+          "payment-and-ticketing"
+        )
+    )
+  );
+
+/**
  * Whether a message renders anything at all.
  *
  * The model sometimes ends a failed turn with an empty reply — no text, no

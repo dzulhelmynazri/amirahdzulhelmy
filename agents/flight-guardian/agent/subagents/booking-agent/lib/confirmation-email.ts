@@ -61,16 +61,105 @@ export const contactsFromOrderInput = (input: unknown): string[] => {
   ]);
 };
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+const asString = (value: unknown): string =>
+  typeof value === "string" ? value : "";
+
+/** IATA code whichever shape Atlas used: bare string or {code, city}. */
+const airportOf = (value: unknown): string =>
+  typeof value === "string" ? value : asString(isRecord(value) && value.code);
+
+/** Atlas times are `YYYYMMDDHHMM`; render "11 Sep 2026, 07:10". */
+const MONTHS = "Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec".split(" ");
+const timeOf = (value: unknown): string => {
+  const raw = asString(value);
+  if (raw.length < 12) {
+    return raw;
+  }
+  const month = MONTHS[Number(raw.slice(4, 6)) - 1] ?? raw.slice(4, 6);
+  return `${Number(raw.slice(6, 8))} ${month} ${raw.slice(0, 4)}, ${raw.slice(8, 10)}:${raw.slice(10, 12)}`;
+};
+
+interface EmailSegment {
+  arr: string;
+  arrTime: string;
+  dep: string;
+  depTime: string;
+  flight: string;
+}
+
+/** Flight rows and passenger names from a query-order response, best-effort. */
+const describeOrder = (
+  order: unknown
+): { passengers: string[]; segments: EmailSegment[] } => {
+  const passengers: string[] = [];
+  const segments: EmailSegment[] = [];
+  if (!isRecord(order)) {
+    return { passengers, segments };
+  }
+
+  if (Array.isArray(order.passengers)) {
+    for (const entry of order.passengers) {
+      const name = asString(isRecord(entry) && entry.name);
+      if (name) {
+        passengers.push(name);
+      }
+    }
+  }
+
+  const routing = isRecord(order.routing) ? order.routing : {};
+  for (const key of ["fromSegments", "retSegments"]) {
+    const list = routing[key];
+    if (!Array.isArray(list)) {
+      continue;
+    }
+    for (const entry of list) {
+      if (!isRecord(entry)) {
+        continue;
+      }
+      const carrier = asString(entry.carrier);
+      const number = asString(entry.flightNumber);
+      segments.push({
+        arr: airportOf(entry.arrAirport),
+        arrTime: timeOf(entry.arrTime),
+        dep: airportOf(entry.depAirport),
+        depTime: timeOf(entry.depTime),
+        flight: number.startsWith(carrier) ? number : `${carrier}${number}`,
+      });
+    }
+  }
+  return { passengers, segments };
+};
+
 const lines = (input: {
+  order?: unknown;
   orderNo: string;
   pnr?: string;
   summary?: string;
 }): string => {
+  const { passengers, segments } = describeOrder(input.order);
   const parts = [
-    "Your booking is confirmed.",
+    "Your booking is confirmed. ✈",
     "",
-    `Order number: ${input.orderNo}`,
     ...(input.pnr ? [`Booking reference (PNR): ${input.pnr}`] : []),
+    `Order number: ${input.orderNo}`,
+    ...(passengers.length > 0
+      ? [
+          `Passenger${passengers.length > 1 ? "s" : ""}: ${passengers.join(", ")}`,
+        ]
+      : []),
+    ...(segments.length > 0
+      ? [
+          "",
+          "Flights",
+          ...segments.map(
+            (s) =>
+              `  ${s.flight} · ${s.dep} → ${s.arr} · ${s.depTime} → ${s.arrTime}`
+          ),
+        ]
+      : []),
     ...(input.summary ? ["", input.summary] : []),
     "",
     "Keep the order number — it is what any airline or agent will ask for.",
@@ -80,9 +169,52 @@ const lines = (input: {
   return parts.join("\n");
 };
 
+const escapeHtml = (value: string): string =>
+  value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
+
+/** Same content as the text body, styled just enough to read as a ticket. */
+const html = (input: {
+  order?: unknown;
+  orderNo: string;
+  pnr?: string;
+  summary?: string;
+}): string => {
+  const { passengers, segments } = describeOrder(input.order);
+  const row = (label: string, value: string) =>
+    `<tr><td style="padding:4px 16px 4px 0;color:#6b7280;white-space:nowrap">${label}</td><td style="padding:4px 0;font-weight:600">${escapeHtml(value)}</td></tr>`;
+
+  const flightRows = segments
+    .map(
+      (s) =>
+        `<tr><td style="padding:8px 12px;border-top:1px solid #e5e7eb;font-weight:600;white-space:nowrap">${escapeHtml(s.flight)}</td><td style="padding:8px 12px;border-top:1px solid #e5e7eb;white-space:nowrap">${escapeHtml(s.dep)} → ${escapeHtml(s.arr)}</td><td style="padding:8px 12px;border-top:1px solid #e5e7eb">${escapeHtml(s.depTime)} → ${escapeHtml(s.arrTime)}</td></tr>`
+    )
+    .join("");
+
+  return `<div style="font-family:ui-sans-serif,system-ui,sans-serif;max-width:560px;margin:0 auto;padding:24px;color:#111827">
+  <h1 style="font-size:20px;margin:0 0 4px">Your booking is confirmed ✈</h1>
+  <p style="margin:0 0 20px;color:#6b7280">Atlas · Flight Guardian</p>
+  <table style="border-collapse:collapse;font-size:14px;margin-bottom:20px">
+    ${input.pnr ? row("PNR", input.pnr) : ""}
+    ${row("Order", input.orderNo)}
+    ${passengers.length > 0 ? row(passengers.length > 1 ? "Passengers" : "Passenger", passengers.join(", ")) : ""}
+  </table>
+  ${
+    segments.length > 0
+      ? `<table style="border-collapse:collapse;font-size:14px;width:100%;margin-bottom:20px"><thead><tr><th style="text-align:left;padding:8px 12px;color:#6b7280;font-weight:500">Flight</th><th style="text-align:left;padding:8px 12px;color:#6b7280;font-weight:500">Route</th><th style="text-align:left;padding:8px 12px;color:#6b7280;font-weight:500">Times</th></tr></thead><tbody>${flightRows}</tbody></table>`
+      : ""
+  }
+  ${input.summary ? `<p style="font-size:14px">${escapeHtml(input.summary)}</p>` : ""}
+  <p style="font-size:13px;color:#6b7280">Keep the order number — it is what any airline or agent will ask for. Ticketing can take a few minutes to finish after payment; the reference above is valid either way.</p>
+</div>`;
+};
+
 export const sendBookingConfirmation = async (
   context: ToolContext,
   input: {
+    order?: unknown;
     orderNo: string;
     pnr?: string;
     recipients: readonly string[];
@@ -104,7 +236,10 @@ export const sendBookingConfirmation = async (
     await mailer.emails.send(
       {
         from: fromAddress,
-        subject: `Booking confirmed — ${input.orderNo}`,
+        html: html(input),
+        subject: input.pnr
+          ? `Booking confirmed — PNR ${input.pnr}`
+          : `Booking confirmed — ${input.orderNo}`,
         text: lines(input),
         to: [...to],
       },

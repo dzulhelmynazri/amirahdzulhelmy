@@ -13,6 +13,7 @@ import { Suggestions } from "@atlas/ui/components/agents/suggestions";
 import { Button } from "@atlas/ui/components/button";
 import { Kbd, KbdGroup } from "@atlas/ui/components/kbd";
 import { cn } from "@atlas/ui/lib/utils";
+import { useQuery } from "@tanstack/react-query";
 import { BorderBeam } from "border-beam";
 import type { EveMessage } from "eve/react";
 import { SquarePen, User, XIcon } from "lucide-react";
@@ -22,6 +23,7 @@ import { useCallback, useEffect, useRef } from "react";
 import type { PendingSuggestions } from "@/components/atlas-agent-message";
 import {
   AtlasAgentMessageBody,
+  hasApprovedPayment,
   hasPendingInput,
   hasVisibleBody,
   pendingSubagent,
@@ -31,6 +33,7 @@ import { ChatHistory } from "@/components/chat-history";
 import { useAgentSidebarSync } from "@/hooks/use-agent-panel";
 import { useEveChat } from "@/hooks/use-eve-chat";
 import { useFollowUps } from "@/hooks/use-follow-ups";
+import { trpc } from "@/utils/trpc";
 
 const AGENT_NAME = "Flight Guardian";
 
@@ -84,6 +87,57 @@ const AgentHeader = ({
   </div>
 );
 
+/**
+ * The receipt for a booking whose recap never arrived.
+ *
+ * Payment happens inside the booking subagent's session; when the stream to
+ * this panel drops mid-run, the booking still completes server-side but the
+ * closing message is lost. Rather than tell the traveller a session ended,
+ * read the booking row the payment tool wrote and state what actually
+ * happened — PNR, order, trip, and where the confirmation email went.
+ */
+const BookingReceipt = () => {
+  const { data } = useQuery({
+    ...trpc.booking.list.queryOptions(),
+    refetchInterval: (query) =>
+      query.state.data?.[0]?.status === "issued" ? false : 5000,
+  });
+  // Newest booking for this account. This component only mounts after a
+  // payment was approved in this very conversation, so the freshest row is
+  // that payment's booking.
+  const latest = data?.[0];
+
+  if (!latest) {
+    return (
+      <p className="text-muted-foreground text-sm">
+        Payment approved — finalising the booking. The details will be on your
+        Bookings page in a moment.
+      </p>
+    );
+  }
+
+  const contacts = latest.payload?.atlasConfirmationContacts;
+  const email = Array.isArray(contacts) ? String(contacts[0] ?? "") : "";
+  const issued = latest.status === "issued";
+  const total =
+    latest.totalAmount === null
+      ? ""
+      : ` · $${latest.totalAmount}${latest.currency === null ? "" : ` ${latest.currency}`}`;
+
+  return (
+    <div className="flex flex-col gap-1 text-sm">
+      <p>
+        ✅ Booked — PNR <span className="font-mono">{latest.pnr}</span> · order{" "}
+        <span className="font-mono">{latest.orderNo}</span>
+        {total}
+      </p>
+      <p>{issued ? "✅ Tickets issued" : "⏳ Tickets issuing"}</p>
+      <p>✅ Itinerary saved — see the Trips page</p>
+      {email ? <p>✅ Confirmation email sent to {email}</p> : null}
+    </div>
+  );
+};
+
 const AgentMessages = ({
   isBusy,
   messages,
@@ -121,6 +175,9 @@ const AgentMessages = ({
     !isBusy &&
     last !== undefined &&
     (last.role === "user" || !hasVisibleBody(last));
+  // Silence after an approved payment is almost always a finished booking
+  // whose recap was lost with the stream — show the receipt, not a shrug.
+  const paidSilently = endedSilently && hasApprovedPayment(messages);
 
   if (messages.length === 0 && !isBusy) {
     return (
@@ -194,10 +251,14 @@ const AgentMessages = ({
               />
             </MessageAvatar>
             <MessageContent>
-              <p className="text-muted-foreground text-sm">
-                That attempt ended without a reply. Say &ldquo;Proceed.&rdquo;
-                to pick it back up, or ask again.
-              </p>
+              {paidSilently ? (
+                <BookingReceipt />
+              ) : (
+                <p className="text-muted-foreground text-sm">
+                  That attempt ended without a reply. Say &ldquo;Proceed.&rdquo;
+                  to pick it back up, or ask again.
+                </p>
+              )}
             </MessageContent>
           </Message>
         ) : null}

@@ -33,9 +33,16 @@ export default defineTool({
     // to nobody.
     const recipients = await recallConfirmationContacts(input.orderNo);
     await persistBooking(context, "issued", result, input.orderNo);
+    // The pay response is thin; the full order (passengers, flight times) is
+    // what makes the confirmation email worth opening. Best-effort — a failed
+    // read sends the short email rather than none.
+    const order = await client.flights.queryOrder
+      .query({ orderNo: input.orderNo })
+      .catch(() => null);
     const confirmationEmail = await sendBookingConfirmation(context, {
+      order,
       orderNo: input.orderNo,
-      pnr: pnrOf(result),
+      pnr: pnrOf(result) ?? pnrOf(order),
       recipients,
     });
     // Surfaced so the recap can say what actually happened to the email —
