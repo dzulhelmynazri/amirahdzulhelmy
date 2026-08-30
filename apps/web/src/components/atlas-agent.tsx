@@ -237,6 +237,7 @@ const AgentComposer = ({
   isBusy,
   isEmpty,
   isFullWidth,
+  onReset,
   onStop,
   onSubmit,
   ready,
@@ -251,6 +252,7 @@ const AgentComposer = ({
   isBusy: boolean;
   isEmpty: boolean;
   isFullWidth: boolean;
+  onReset: () => void;
   onStop: () => void;
   onSubmit: (text: string) => void;
   ready: boolean;
@@ -336,7 +338,17 @@ const AgentComposer = ({
         </>
       ) : null}
       {errorMessage ? (
-        <p className="text-destructive text-sm">{errorMessage}</p>
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-destructive text-sm">{errorMessage}</p>
+          {/*
+            A dead session leaves the whole panel with nothing actionable —
+            the fix is always the same, so put it next to the error instead
+            of behind the pencil icon in the header.
+          */}
+          <Button onClick={onReset} size="sm" variant="outline">
+            Start new chat
+          </Button>
+        </div>
       ) : null}
       <BorderBeam colorVariant="colorful" size="pulse-inner" strength={0.7}>
         <PromptInput
@@ -462,6 +474,7 @@ export const AtlasAgent = () => {
               isBusy={isBusy}
               isEmpty={messages.length === 0}
               isFullWidth={isFullWidth}
+              onReset={reset}
               onStop={handleStop}
               onSubmit={handleSubmit}
               setDraft={setDraft}
