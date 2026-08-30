@@ -701,6 +701,31 @@ const userText = (message: EveMessage): string =>
     .join("\n")
     .trimEnd();
 
+/**
+ * Whether a message renders anything at all.
+ *
+ * The model sometimes ends a failed turn with an empty reply — no text, no
+ * tool rows, nothing. Rendered anyway, each one is a bare avatar floating
+ * next to blank space. The parent checks this before mounting the row so an
+ * empty turn leaves no trace.
+ */
+export const hasVisibleBody = (message: EveMessage): boolean => {
+  if (message.role !== "assistant") {
+    return true;
+  }
+  return message.parts.some((part) => {
+    if (part.type === "text" || part.type === "reasoning") {
+      return part.text.trim().length > 0;
+    }
+    return (
+      part.type === "authorization" ||
+      isTracePart(part) ||
+      isHitlPart(part) ||
+      isCompletedToolPart(part)
+    );
+  });
+};
+
 export const AtlasAgentMessageBody = ({
   isLast,
   message,

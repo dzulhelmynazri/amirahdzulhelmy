@@ -23,6 +23,7 @@ import type { PendingSuggestions } from "@/components/atlas-agent-message";
 import {
   AtlasAgentMessageBody,
   hasPendingInput,
+  hasVisibleBody,
   pendingSubagent,
   pendingSuggestions,
 } from "@/components/atlas-agent-message";
@@ -110,6 +111,17 @@ const AgentMessages = ({
    */
   const showThinking = isBusy;
 
+  /**
+   * A turn that ends with nothing to show — no reply text, no tool rows —
+   * used to just go quiet: the working line disappeared and the transcript
+   * looked dead. Say so instead, with the nudge that actually works.
+   */
+  const last = messages.at(-1);
+  const endedSilently =
+    !isBusy &&
+    last !== undefined &&
+    (last.role === "user" || !hasVisibleBody(last));
+
   if (messages.length === 0 && !isBusy) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-center">
@@ -133,8 +145,13 @@ const AgentMessages = ({
       smooth
     >
       <MessageGroup className="p-4">
-        {messages.map((message, index) => {
-          const isLast = index === messages.length - 1;
+        {/*
+          An empty assistant turn renders as a bare avatar next to blank
+          space. Filter before mapping so `isLast` lands on a row that
+          actually shows something.
+        */}
+        {messages.filter(hasVisibleBody).map((message, index, visible) => {
+          const isLast = index === visible.length - 1;
           const isAgent = message.role === "assistant";
 
           return (
@@ -163,6 +180,27 @@ const AgentMessages = ({
             </Message>
           );
         })}
+
+        {endedSilently ? (
+          <Message from="assistant" key="silent-end">
+            <MessageAvatar>
+              <Image
+                alt={AGENT_NAME}
+                className="rounded-sm!"
+                height={28}
+                src={AVATAR_URL}
+                unoptimized
+                width={28}
+              />
+            </MessageAvatar>
+            <MessageContent>
+              <p className="text-muted-foreground text-sm">
+                That attempt ended without a reply. Say &ldquo;Proceed.&rdquo;
+                to pick it back up, or ask again.
+              </p>
+            </MessageContent>
+          </Message>
+        ) : null}
 
         {showThinking ? (
           <Message from="assistant" key="typing">
@@ -341,10 +379,17 @@ export const AtlasAgent = () => {
   const isBusy = status === "submitted" || status === "streaming";
 
   const handleSubmit = useCallback(
-    (text: string) => {
-      void send(text);
+    async (text: string) => {
+      // A send that throws — dead session, network drop — used to take the
+      // typed message with it: the box had already cleared. Put the text
+      // back so the traveller retries instead of retyping.
+      try {
+        await send(text);
+      } catch {
+        setDraft(text);
+      }
     },
-    [send]
+    [send, setDraft]
   );
 
   /**
