@@ -32,6 +32,7 @@ import type {
   EveMessagePart,
   UseEveAgentHelpers,
 } from "eve/react";
+import { useCallback, useEffect } from "react";
 import type { ReactNode } from "react";
 
 type RespondFn = UseEveAgentHelpers<EveMessageData>["respond"];
@@ -178,8 +179,10 @@ const optionByRole = (request: EveMessageInputRequest) => {
     options.find((option) => option.style === "primary") ??
     options.find((option) => option.id === "approve") ??
     options.find((option) => option !== deny);
-  const always = options.find((option) => option !== allow && option !== deny);
-  return { allow, always, deny };
+  // No "always" here on purpose: eve sends approve and cancel and nothing
+  // else, so looking for a third option only ever found undefined. Remembering
+  // a tool is the client's decision now — see `alwaysAllowed`.
+  return { allow, deny };
 };
 
 const AuthorizationPrompt = ({ part }: { part: EveAuthorizationPart }) => {
@@ -214,6 +217,24 @@ const AuthorizationPrompt = ({ part }: { part: EveAuthorizationPart }) => {
   );
 };
 
+/**
+ * Tools the traveller has chosen not to be asked about again.
+ *
+ * eve sends two options with an approval — approve and cancel — so "always"
+ * cannot come from the server; `optionByRole` was binding that button to a
+ * third option that never existed, which is why it never rendered. This is the
+ * client's own answer: pressing it approves now and answers the same tool
+ * automatically for the rest of the page.
+ *
+ * Module scope so it survives the panel remounting mid-conversation, and
+ * deliberately not persisted — a fresh visit asks again. Pre-authorising a
+ * refund forever is not something a page reload should quietly inherit.
+ */
+const alwaysAllowed = new Set<string>();
+
+/** Approval requests already answered, so an auto-approve fires once. */
+const autoAnswered = new Set<string>();
+
 const ApprovalHitl = ({
   part,
   request,
@@ -225,29 +246,53 @@ const ApprovalHitl = ({
 }) => {
   const name = part.toolMetadata?.eve?.name ?? part.toolName;
   const pending = part.state === "approval-requested";
-  const { allow, always, deny } = request
+  const { allow, deny } = request
     ? optionByRole(request)
-    : { allow: undefined, always: undefined, deny: undefined };
+    : { allow: undefined, deny: undefined };
+
+  const approve = useCallback(() => {
+    if (request) {
+      respondToRequest(
+        respond,
+        request,
+        allow?.id,
+        allow ? undefined : "approve"
+      );
+    }
+  }, [allow, request, respond]);
+
+  /**
+   * Answers a remembered tool without waiting for a tap.
+   *
+   * Guarded on the request id rather than the tool name: the same tool asks
+   * again on a later call, and each of those still needs an answer — it is
+   * answering the *same* request twice that would double-run it.
+   */
+  useEffect(() => {
+    if (
+      !(pending && request) ||
+      !alwaysAllowed.has(name) ||
+      autoAnswered.has(request.requestId)
+    ) {
+      return;
+    }
+
+    autoAnswered.add(request.requestId);
+    approve();
+  }, [approve, name, pending, request]);
 
   return (
     <ToolApproval
       description={request?.prompt}
       onAlwaysAllow={
-        pending && request && always
-          ? () => respondToRequest(respond, request, always.id)
-          : undefined
-      }
-      onApprove={
         pending && request
-          ? () =>
-              respondToRequest(
-                respond,
-                request,
-                allow?.id,
-                allow ? undefined : "approve"
-              )
+          ? () => {
+              alwaysAllowed.add(name);
+              approve();
+            }
           : undefined
       }
+      onApprove={pending && request ? approve : undefined}
       onDeny={
         pending && request
           ? () =>
