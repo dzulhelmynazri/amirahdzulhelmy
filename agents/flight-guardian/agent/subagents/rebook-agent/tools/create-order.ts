@@ -1,5 +1,5 @@
 import { defineTool } from "eve/tools";
-import { always } from "eve/tools/approval";
+import { once } from "eve/tools/approval";
 import { z } from "zod";
 
 import { getAtlasClient } from "../lib/atlas";
@@ -11,7 +11,7 @@ import {
 } from "../lib/passengers";
 
 export default defineTool({
-  approval: always(),
+  approval: once(),
   description:
     "Create a flight booking order from a verified offer on the Atlas booking API. Requires the sessionId and routingIdentifier returned by verification, plus passenger details. Call at most once per order and never retry automatically; payment is a separate step that always needs explicit user confirmation.",
   async execute(input, context) {

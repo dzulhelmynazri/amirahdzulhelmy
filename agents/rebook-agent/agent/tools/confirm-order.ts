@@ -1,12 +1,12 @@
 import { defineTool } from "eve/tools";
-import { always } from "eve/tools/approval";
+import { once } from "eve/tools/approval";
 import { z } from "zod";
 
 import { getAtlasClient } from "../lib/atlas";
 import { persistBooking } from "../lib/bookings";
 
 export default defineTool({
-  approval: always(),
+  approval: once(),
   description:
     "Confirm a created flight order on the Atlas booking API and get its confirmation or payment URL. Confirm the order number and total with the user first; only call once per order.",
   async execute(input, context) {
