@@ -20,7 +20,7 @@ Total ≈ 480 words ≈ 3 minutes at a natural pace. Read order matches `docs/DE
 >
 > This is the part worth watching. Creating the order stops. Paying stops. The model cannot spend money on its own — it can only ask, and wait for a tap.
 >
-> Approved. The order is created, the ticket is issued, and the booking reference is real: this ran against AtripTech's sandbox, not a mock.
+> Approved. The order is created, the ticket is issued, and the booking reference is real: this ran against AtripTech's sandbox, not a mock. Then the follow-through nobody asked for twice — the itinerary writes itself to the Trips page, and a confirmation email with every flight and time lands in the traveller's inbox before the chat is done.
 
 ## 4 — Bookings (~15s)
 
