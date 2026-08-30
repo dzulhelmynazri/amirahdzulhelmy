@@ -8,6 +8,10 @@ import { defineEval } from "eve/evals";
  * at 12 functions. Asserting `calledSubagent("journey-concierge")` asks for a
  * subagent this agent no longer has, so it can never pass; the conductor is
  * the route.
+ *
+ * The prompt names flight-guardian for the same reason. Telling the agent to
+ * hand the work to journey-concierge named a specialist it cannot reach, and
+ * it answered by delegating to nothing at all.
  */
 export default defineEval({
   description:
@@ -15,7 +19,7 @@ export default defineEval({
   tags: ["live"],
   async test(t) {
     await t.send(
-      "Flooding in central Bangkok may affect ground transport from BKK airport. My order is ATL1234567890. Hand this to journey-concierge so they can advise on rerouting ground transfers. Do not book or rebook any flight."
+      "Flooding in central Bangkok may affect ground transport from BKK airport. My order is ATL1234567890. Hand this to flight-guardian so its concierge specialist can advise on rerouting ground transfers. Do not book or rebook any flight."
     );
     t.succeeded();
     t.calledSubagent("flight-guardian");
