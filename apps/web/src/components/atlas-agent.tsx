@@ -214,17 +214,17 @@ const AgentComposer = ({
   suggestions?: PendingSuggestions;
 }) => {
   /**
-   * The draft is the value. There is no second copy.
+   * The textarea is uncontrolled. Typing re-renders nothing above it.
    *
-   * This used to hold `value` in local state and copy `draft` into it during
-   * render whenever the prop changed — derived state, kept in step by a
-   * render-phase write. Two sources of truth for one string, and React counts
-   * render-phase updates toward the update-depth limit, so a controlled
-   * textarea in a panel that re-renders while the agent streams eventually
-   * raised "Maximum update depth exceeded" from inside the textarea.
-   *
-   * One state, owned by the panel: staging a handoff writes it, typing writes
-   * it, sending clears it. Nothing to synchronise, so nothing to loop.
+   * Every controlled variant of this box eventually raised "Maximum update
+   * depth exceeded" from inside the textarea. Local state synced from a prop
+   * did it; so did binding it straight to the panel's draft, which routed
+   * every keystroke through the layout-level context provider and re-rendered
+   * the whole protected tree. The class of bug is the parent round-trip, so
+   * the fix removes the round-trip: PromptInput keeps its own value, and a
+   * staged handoff arrives by remount — `key={draft}` mounts a fresh input
+   * with the draft as its defaultValue. Parents hear about the text exactly
+   * once, on submit.
    */
   const stagedRef = useRef({ draft, draftContext });
 
@@ -297,13 +297,13 @@ const AgentComposer = ({
       <BorderBeam colorVariant="colorful" size="pulse-inner" strength={0.7}>
         <PromptInput
           aria-label="Message me"
+          defaultValue={draft}
           disabled={!ready}
+          key={draft}
           loading={isBusy}
           onStop={onStop}
           onSubmit={handleSubmit}
-          onValueChange={setDraft}
           placeholder="Ask me anything..."
-          value={draft}
         />
       </BorderBeam>
     </div>

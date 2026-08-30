@@ -167,7 +167,24 @@ const respondToRequest = (
   if (text) {
     payload.text = text;
   }
-  void respond([payload]);
+  // Returned, not voided: eve rejects a respond sent while a turn is still
+  // processing, and a swallowed rejection surfaces as a runtime overlay crash.
+  return respond([payload]);
+};
+
+/** Fire-and-forget respond that cannot crash on a busy turn. */
+const respondQuietly = async (
+  respond: RespondFn,
+  request: EveMessageInputRequest,
+  optionId?: string,
+  text?: string
+): Promise<void> => {
+  try {
+    await respondToRequest(respond, request, optionId, text);
+  } catch {
+    // "eve session is already processing a turn" — the tap simply did not
+    // land; the card stays pending and the traveller taps again.
+  }
 };
 
 const optionByRole = (request: EveMessageInputRequest) => {
@@ -250,14 +267,22 @@ const ApprovalHitl = ({
     ? optionByRole(request)
     : { allow: undefined, deny: undefined };
 
-  const approve = useCallback(() => {
-    if (request) {
-      respondToRequest(
+  const approve = useCallback(async () => {
+    if (!request) {
+      return false;
+    }
+    try {
+      await respondToRequest(
         respond,
         request,
         allow?.id,
         allow ? undefined : "approve"
       );
+      return true;
+    } catch {
+      // "eve session is already processing a turn" — the stream has not
+      // settled yet. The caller decides whether to retry.
+      return false;
     }
   }, [allow, request, respond]);
 
@@ -278,7 +303,15 @@ const ApprovalHitl = ({
     }
 
     autoAnswered.add(request.requestId);
-    approve();
+    const run = async () => {
+      const ok = await approve();
+      if (!ok) {
+        // The session was mid-turn. A later render — and streaming produces
+        // plenty — retries once the turn settles.
+        autoAnswered.delete(request.requestId);
+      }
+    };
+    void run();
   }, [approve, name, pending, request]);
 
   return (
@@ -288,20 +321,27 @@ const ApprovalHitl = ({
         pending && request
           ? () => {
               alwaysAllowed.add(name);
-              approve();
+              void approve();
             }
           : undefined
       }
-      onApprove={pending && request ? approve : undefined}
+      onApprove={
+        pending && request
+          ? () => {
+              void approve();
+            }
+          : undefined
+      }
       onDeny={
         pending && request
-          ? () =>
-              respondToRequest(
+          ? () => {
+              void respondQuietly(
                 respond,
                 request,
                 deny?.id,
                 deny ? undefined : "deny"
-              )
+              );
+            }
           : undefined
       }
       parameters={toolParameters(part.input)}
@@ -329,7 +369,7 @@ const QuestionHitl = ({
     if (!answer) {
       return;
     }
-    respondToRequest(
+    void respondQuietly(
       respond,
       request,
       answer.selected[0],
