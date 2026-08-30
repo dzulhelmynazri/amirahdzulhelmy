@@ -156,6 +156,16 @@ export const persistBooking = async (
       ...(status === null ? {} : { status }),
     };
 
+    // Merge, never replace: create-order parks the confirmation addresses in
+    // this payload, and confirm/payment persisting their own event payloads
+    // was wiping that key before the send could read it back — silently, so
+    // every booking email vanished without an error.
+    const { sql } = await import("drizzle-orm");
+    const mergedChanges = {
+      ...changes,
+      payload: sql`coalesce(${booking.payload}, '{}'::jsonb) || ${JSON.stringify(event.payload)}::jsonb`,
+    };
+
     if (options?.enrichOnly) {
       const { and, eq } = await import("drizzle-orm");
 
@@ -168,7 +178,7 @@ export const persistBooking = async (
 
       await db
         .update(booking)
-        .set(changes)
+        .set(mergedChanges)
         .where(and(eq(booking.orderNo, orderNo), eq(booking.userId, userId)));
       return;
     }
@@ -176,7 +186,7 @@ export const persistBooking = async (
     await db
       .insert(booking)
       .values({ ...fields, orderNo, status: status ?? "created" })
-      .onConflictDoUpdate({ set: changes, target: booking.orderNo });
+      .onConflictDoUpdate({ set: mergedChanges, target: booking.orderNo });
   } catch {
     // Best effort: a failed booking write must never fail the booking itself.
   }

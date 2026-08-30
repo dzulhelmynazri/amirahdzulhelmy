@@ -28,13 +28,15 @@ export default defineTool({
       paymentMethod: 1,
       ...input,
     });
+    // Read the addresses before persisting: the persist rewrites the payload
+    // they live in, and reading afterwards is how every email silently sent
+    // to nobody.
+    const recipients = await recallConfirmationContacts(input.orderNo);
     await persistBooking(context, "issued", result, input.orderNo);
-    // The confirmation the traveller was always promised and never got.
-    // Addresses were stored by create-order; Atlas returns them blank.
     await sendBookingConfirmation(context, {
       orderNo: input.orderNo,
       pnr: pnrOf(result),
-      recipients: await recallConfirmationContacts(input.orderNo),
+      recipients,
     });
     return result;
   },
