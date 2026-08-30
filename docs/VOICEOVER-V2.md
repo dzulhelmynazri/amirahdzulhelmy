@@ -16,7 +16,7 @@ Total ≈ 470 words ≈ 3 minutes 10 at a natural pace.
 
 ## 3 — 0:28 · Yesterday's work (~18s)
 
-> While it searches live fares, here's what the same team did yesterday: a Seoul booking, created, confirmed, and ticketed — with the passenger, the segments, and the baggage the fare included. Every agent booking lands on the same pages a human would use.
+> While it searches live fares, here's yesterday's work: a Seoul booking — created, confirmed, and ticketed — passenger, segments, and baggage all on record.
 
 ## 4 — 1:00 · The gates (~20s)
 
