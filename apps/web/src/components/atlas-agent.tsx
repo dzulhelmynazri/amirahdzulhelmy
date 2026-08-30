@@ -92,7 +92,6 @@ const AgentMessages = ({
   messages: readonly EveMessage[];
   respond: ReturnType<typeof useEveChat>["actions"]["respond"];
 }) => {
-  const last = messages.at(-1);
   /**
    * A hop is the longest wait in the panel and the one that used to look like
    * nothing at all: the assistant message already has parts, so the ordinary
@@ -100,9 +99,16 @@ const AgentMessages = ({
    * agent's session. Naming the specialist turns dead air into progress.
    */
   const waitingOn = isBusy ? pendingSubagent(messages) : undefined;
-  const waitingForAssistant =
-    isBusy && (last?.role !== "assistant" || last.parts.length === 0);
-  const showThinking = waitingForAssistant || waitingOn !== undefined;
+  /**
+   * Busy means visible, always.
+   *
+   * The old condition only showed the indicator before the first part arrived
+   * or when a subagent hop was detectable — so a four-minute booking hop
+   * rendered as "Completed 3 steps" and then nothing, which reads as a hang.
+   * A turn that is running shows a line saying so for its whole duration; the
+   * specialist is named when known, and honest about the wait either way.
+   */
+  const showThinking = isBusy;
 
   if (messages.length === 0 && !isBusy) {
     return (
@@ -173,8 +179,8 @@ const AgentMessages = ({
             <MessageContent>
               <ThinkingShimmer className="text-sm" duration={1.8}>
                 {waitingOn
-                  ? `Asking ${waitingOn} — this one takes a moment…`
-                  : "Thinking…"}
+                  ? `Asking ${waitingOn} — this can take a few minutes…`
+                  : "Working on it — a specialist hop can take a few minutes…"}
               </ThinkingShimmer>
             </MessageContent>
           </Message>
