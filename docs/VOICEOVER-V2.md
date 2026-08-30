@@ -42,7 +42,15 @@ Total ≈ 470 words ≈ 3 minutes 10 at a natural pace.
 
 > Google Calendar, Maps, and Gmail are wired in for the journey concierge — because a flight is not a journey, and the trip doesn't end at the gate.
 
-## 10 — 3:05 · Close (~14s)
+## 10 — 3:05 · The itinerary (~12s)
+
+> And here's the itinerary it wrote — departure, the layover in Ho Chi Minh City, arrival at Haneda, the booking reference, even the baggage. Nobody typed this. The agent did.
+
+## 11 — after the itinerary · The proof (~13s)
+
+> So when the session ends, nothing is lost. The ticket is on the Bookings page, the itinerary is on Trips, and the confirmation email is in the inbox — three places to check, all agreeing.
+
+## 12 — final shot · Close (~14s)
 
 > Tickets issued. An orchestrator that owns the conversation, specialists in their own contexts, and a human on every gate that spends money. Atlas — agentic, but never alone with your card.
 
