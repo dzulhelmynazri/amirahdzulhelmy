@@ -391,16 +391,24 @@ const EveChatSession = ({
    * session id, which is the only thing that stops that write.
    */
   const currentSessionId = agent.session?.sessionId;
+  /**
+   * The snapshot's id as well as the live one. After a refresh the transcript
+   * on screen comes from localStorage, and the live hook may not have adopted
+   * that session yet — so a delete matched against the live id alone missed,
+   * the cache survived, and the "deleted" conversation was still on screen
+   * with the history menu insisting nothing existed.
+   */
+  const savedSessionId = saved.session?.sessionId;
 
   const deleteConversation = useCallback(
     async (sessionId: string) => {
       await removeConversation(sessionId);
 
-      if (sessionId === currentSessionId) {
+      if (sessionId === currentSessionId || sessionId === savedSessionId) {
         reset();
       }
     },
-    [currentSessionId, reset]
+    [currentSessionId, savedSessionId, reset]
   );
 
   /**
